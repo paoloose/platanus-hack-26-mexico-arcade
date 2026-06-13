@@ -1,4 +1,4 @@
-// Platanus Hack 26 — Lucha de Código
+// Platanus Hack 26 - Lucha de Código
 // Scene-based architecture. Each game phase is a Phaser Scene.
 
 const W = 800, H = 600, K = 'platanus-lucha-26';
@@ -19,7 +19,7 @@ const P_PAL = [
   0xd2fe7d, 0xc1e12c, 0x989800, 0x5b4d00, 0x362400, 0x004d03, 0x0c6d00, 0x2b9200,
   0x7ec43f, 0xb2da73, 0xc8feae, 0x83fe6b, 0xff6600, 0x00cb22, 0x006d45, 0x004d3d,
   0x206100, 0x019000, 0x0bba3d, 0x2eda91, 0x4fffca, 0xd0fff6, 0xa9fbee, 0x01ffff,
-  0x009cbe, 0x006092, 0x004373, 0x006cdc, 0x6dd0ff, 0xb6f3ff, 0xa4dbff, 0x687aff,
+  0x08b8ea, 0x006092, 0x004373, 0x333d8d, 0x6dd0ff, 0xb6f3ff, 0xa4dbff, 0x687aff,
   0x0147ff, 0x0017c5, 0x140c81, 0x4200a5, 0x8d00f9, 0xc84ff5, 0xea9bf3, 0xf8dcf7,
   0xf49fb3, 0xf6629d, 0xff0092, 0xcc0095, 0xa30092, 0x920030, 0xc1003f, 0xff0000,
   0xf5765d, 0xd11717, 0xa41c1c, 0xab8169, 0x7c6822, 0xffc7ba, 0x254c93, 0xdeac92,
@@ -68,7 +68,7 @@ function parseSprite(sData, w = 24) {
   }
 }
 
-function drawSprite(gfx, sData, x, y) {
+function drawSprite(gfx, sData, x, y, opt = {}) {
   if (!sData || !sData.length) return;
   const h = sData.length;
   const w = sData[0]?.length || 0;
@@ -76,6 +76,18 @@ function drawSprite(gfx, sData, x, y) {
   const cx = w >> 1;
   const cy = h >> 1;
   
+  if (opt.shadow) {
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < sData[r].length; c++) {
+        const col = COLOR_MAP[sData[r][c]];
+        if (col != null) {
+          gfx.fillStyle(P_PAL[0], 0.3);
+          gfx.fillRect(x - cx + c + 1 | 0, y - cy + r + 2 | 0, 1, 1);
+        }
+      }
+    }
+  }
+
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < sData[r].length; c++) {
       const col = COLOR_MAP[sData[r][c]];
@@ -88,52 +100,45 @@ function drawSprite(gfx, sData, x, y) {
 }
 
 const CH = [
-  ['BLUE DEMON', {
-  Walk: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
-  Jump: '~~~~~8.7:9.8.2:1E5:8.7.3:4E2:8.7.4:1E2A2E8.^7.5:4E8.8.4:1E3=8.8.4:3E9.5.4=5:9.1.4.9=1=9.1.^3.4=1K6=9.1.3.3=2K6=6.2q2.3.3=1K7=4.1:3q2.3.2=2.7=2.3:3q2.7.9:3:3q2.^7.9:2:6.8.7:9.',
-  Punch: '~~9.1.7:7.9.1.2:1E5:6.9.3:4E2:6.9.4:1E2A2E6.^9.5:4E6.9.1.4:1E3=6.9.1.4:3E1.4=2.9.1.1=5:1.6=1.9.7=1K6=1.8.2=2K4=1K1=3.2=1.8.3=2K3=1K7.8.4=2K2=1K7.8.6=1K1=8.9.5=1K1=8.9.8:7.9.9:6.9.4:1.4:6.^9.4q1.4q6.9.4q1.5q5.9.5q9.1.',
-  Lift: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
+  ['Blue Demon', {
+  Walk: '~9.7r8.9.2r1F5r7.8.3r4F2r7.8.3r2F2A2F7.8.4r1F2A2F7.8.5r4F7.9.3r2F3=7.9.4r3F8.9.1.5r9.7.7r1=1r8.6.2r2=3r2=1r8.5.1r1y3=1K1r4=8.5.1r1y3=2K4=1K7.5.1r1y4=2K3=1K1=6.5.1r1y6=1K2=1K1=6.5.1r2y5=1K2=8.5.1r2y2r3=3r8.5.1r2y9r7.5.1r2y2r2F1.2r2F7.^8.3r1F1.3r1F7.8.4r1.5r6.8.5r9.2.',
+  Jump: '~~~~~8.7r9.8.2r1F5r8.7.3r4F2r8.7.3r2F2A2F8.7.4r1F2A2F8.7.5r4F8.8.3r2F3=8.7.5r3F9.4.9r1r9.1.2.3r3=4r1=1r9.1.2.2r4=3r3=9.1.1.2r4=1K1r5=9.1.1.2r3=2K6=6.2r2.1.1r1y3=1K7=4.4r2.1.1r1y2=2y2r5=2.3F3r2.1.1r5y9r2F4r2.1.1r3y2.9r6r2.1.1r1y4.9r2r6.8.7r9.',
+  Punch: '~~9.1.7r7.9.1.2r1F5r6.9.3r4F2r6.9.3r2F2A2F6.9.4r1F2A2F6.9.5r4F6.9.1.3r2F3=6.9.1.4r3F1.4=2.9.1.6r1.6=1.8.6r1=1r1K6=1.7.2r1=2K1r3=1K1=3.2=1.6.1r1y3=2K3=1K7.6.1r1y4=2K2=1K7.6.1r1y6=1K1=8.6.1r2y5=1K1=8.6.1r2y2r3=3r7.6.1r2y7r2F6.6.1r2y2r2F1.2r2F6.6.1r2y2r2F1.3r1F6.8.1y3r1F1.4r6.9.4r1.5r5.9.5r9.1.'
 }],
-  ['EL SANTO', {
-  Walk: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
-  Jump: '~~~~~8.7:9.8.2:1E5:8.7.3:4E2:8.7.4:1E2A2E8.^7.5:4E8.8.4:1E3=8.8.4:3E9.5.4=5:9.1.4.9=1=9.1.^3.4=1K6=9.1.3.3=2K6=6.2q2.3.3=1K7=4.1:3q2.3.2=2.7=2.3:3q2.7.9:3:3q2.^7.9:2:6.8.7:9.',
-  Punch: '~~9.1.7:7.9.1.2:1E5:6.9.3:4E2:6.9.4:1E2A2E6.^9.5:4E6.9.1.4:1E3=6.9.1.4:3E1.4=2.9.1.1=5:1.6=1.9.7=1K6=1.8.2=2K4=1K1=3.2=1.8.3=2K3=1K7.8.4=2K2=1K7.8.6=1K1=8.9.5=1K1=8.9.8:7.9.9:6.9.4:1.4:6.^9.4q1.4q6.9.4q1.5q5.9.5q9.1.',
-  Lift: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
+  ['El Santo', {
+  Walk: '~9.7G8.9.8G7.8.4G4F1G7.8.4G1F1A2F1G7.8.4G1F2A2F7.8.4G5F7.9.3G2F3=7.9.4G3F8.9.1.5G9.7.3F2=1G2=1G8.6.2F3=2G2=1G8.5.1F1D3=1K1G4=8.5.1F1D3=2K4=1K7.5.1F1D4=2K3=1K1=6.5.1F1D6=1K2=1K1=6.5.1F2D5=1K2=8.5.1F2D2G3=3G8.5.1F2D9G7.5.1F2D2G2D1.2G2D7.^8.3G1D1.3G1D7.8.4G1.5G6.8.5G9.2.',
+  Jump: '~~~~~8.7G9.8.4G>7.4G4F1G8.7.4G1F1A2F1G8.7.4G1F2A1F1G8.7.4G5F8.8.4G1F3=8.7.1E4G3F9.4.3F1E2=1G3=9.1.2.3F4=2G3=9.1.2.2F4=2G4=9.1.1.2F4=1K6=9.1.1.2F3=2K6=6.2G2.1.1F1D3=1K7=4.4G2.1.1F1D2=2D2G5=2.3D3G2.1.1F5D9G2D4G2.1.1F3D2.9G6G2.1.1F1D4.9G2G6.8.7G9.',
+  Punch: '~~9.1.7G7.9.1.8G6.9.4G3F2G6.9.4G1F1A2F1G6.9.4G1F2A1F1G6.9.4G5F6.9.1.3G2F3=6.9.1.4G3F1.4=2.9.2F5G1.6=1.8.2F3=1G1=1G1K6=1.7.2F1=2K1G3=1K1=3.2=1.6.1F1D3=2K3=1K7.6.1F1D4=2K2=1K7.6.1F1D6=1K1=8.6.1F2D5=1K1=8.6.1F2D2G3=3G7.6.1F2D7G2D6.6.1F2D2G2D1.2G2D6.6.1F2D2G2D1.3G1D6.8.1D3G1D1.4G6.9.4G1.5G5.9.5G9.1.'
 }],
-  ['EL MÍSTICO', {
-  Walk: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
-  Jump: '~~~~~8.7:9.8.2:1E5:8.7.3:4E2:8.7.4:1E2A2E8.^7.5:4E8.8.4:1E3=8.8.4:3E9.5.4=5:9.1.4.9=1=9.1.^3.4=1K6=9.1.3.3=2K6=6.2q2.3.3=1K7=4.1:3q2.3.2=2.7=2.3:3q2.7.9:3:3q2.^7.9:2:6.8.7:9.',
-  Punch: '~~9.1.7:7.9.1.2:1E5:6.9.3:4E2:6.9.4:1E2A2E6.^9.5:4E6.9.1.4:1E3=6.9.1.4:3E1.4=2.9.1.1=5:1.6=1.9.7=1K6=1.8.2=2K4=1K1=3.2=1.8.3=2K3=1K7.8.4=2K2=1K7.8.6=1K1=8.9.5=1K1=8.9.8:7.9.9:6.9.4:1.4:6.^9.4q1.4q6.9.4q1.5q5.9.5q9.1.',
-  Lift: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
+  ['KeMonito', {
+  Walk: '~~~~~~~9.1.5o9.9.1.6o8.9.3o4<8.9.3o1<2A1<8.9.3o3<1A8.9.4o1<2?8.9.4o3<1.2]5.9.3o2]2o3p5.9.1o2p1o1p2<2p6.9.4o1p2<8.9.4p3<8.9.5o2<8.^9.1.1p5o8.9.2p2o1.1p1o8.9.1p2o2.1p1o8.9.3]2.2]8.',
+  Jump: '~~~~~~~~~~~~~~9.5.5o5.9.4.7o4.9.7o4<4.7.1o1p7o1<2A1<4.6.1o1p8o3<1A4.3.1]3o1p5o2p2o1<2?4.3.1]3p2o3<3o2p3<4.3.1]5o4<3o3p5.3.1]5o3<2.1p4o1]4.3.1]2o9.2p1o2]4.',
+  Punch: '~~~~~9.2.5o8.9.2.6o7.9.1.3o4<7.9.1.3o1<2A1<7.9.1.3o3<1A1.2p1]3.9.1.4o1<2?3p1]3.9.1.4o3<2p5.9.3o2]2o2p6.9.1o2p1o1p2<1p7.9.4o1p2<8.9.4p3<8.9.5o2<8.^9.1.1p5o8.9.2p2o1.1p1o8.9.1p2o2.1p1o8.9.3]2.2]8.~~'
 }],
-  ['CHARRO', {
-  Walk: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
-  Jump: '~~~~~8.7:9.8.2:1E5:8.7.3:4E2:8.7.4:1E2A2E8.^7.5:4E8.8.4:1E3=8.8.4:3E9.5.4=5:9.1.4.9=1=9.1.^3.4=1K6=9.1.3.3=2K6=6.2q2.3.3=1K7=4.1:3q2.3.2=2.7=2.3:3q2.7.9:3:3q2.^7.9:2:6.8.7:9.',
-  Punch: '~~9.1.7:7.9.1.2:1E5:6.9.3:4E2:6.9.4:1E2A2E6.^9.5:4E6.9.1.4:1E3=6.9.1.4:3E1.4=2.9.1.1=5:1.6=1.9.7=1K6=1.8.2=2K4=1K1=3.2=1.8.3=2K3=1K7.8.4=2K2=1K7.8.6=1K1=8.9.5=1K1=8.9.8:7.9.9:6.9.4:1.4:6.^9.4q1.4q6.9.4q1.5q5.9.5q9.1.',
-  Lift: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
+  ['Psycho Clwon', {
+  Walk: '9.3.1c9.2.9.2.1c>9.2.3c9.1.9.1.1F3c1F9.9.2F1:1F1:2F8.8.3F3:2F8.8.2F2:1A2:1F8.8.2F2:2A1:2[7.8.2F4:1F1A8.8.3F1:1F1:1A1[8.8.3F1:1F1A2[8.8.1A5F1K2[7.7.1=5A2=1A1[7.7.3=4A1=1A8.7.4=5A2=6.7.6=3A2=6.8.5=3A8.9.1:3=3:8.9.8:7.8.4:1.4:7.8.4:2.2h8.9.2h3.2h8.9.2h3.4[6.9.4[9.2.',
+  Jump: '~9.3.1c9.2.9.2.1c>9.2.3c9.1.9.1.1F3c1F9.9.2F1:1F1:2F8.9.2F3:2F8.8.2F2:1A2:1F8.8.2F2:2A1:2[7.8.2F4:1F1A8.8.3F1:1F1:1A1[8.8.3F1:1F1A2[8.9.5F1.2[7.8.2=2A2=2.1[7.5.5=2A2=9.1.4.5=4A1=9.1.3.4=1K6A9.1.3.3:2K5A7.2[2.3.3=1K7A6.2[2.3.2=2.2:5A2.1:3h2[2.7.9:1:3h2[2.7.9:1:1h6.7.5:>8.7:9.',
+  Punch: '9.5.1c9.9.4.2c9.9.4.3c8.9.3.1F3c1F7.9.2.2F1:1F1:2F6.9.1.3F3:2F6.9.1.2F2:1A2:1F6.9.1.2F2:2A1:2[5.9.1.2F4:1F1A6.9.1.3F1:1F1:1A1[4=2.9.1.3F1:1F1A2[5=1.9.1.1A5F3[4=1.9.1=5A2=1A1[2.2=1.8.3=5A1=7.8.4=5A7.8.6=3A7.9.5=3A7.9.1.1:3=3:7.9.1.8:6.9.4:1.4:6.^9.1.2h3.2h7.9.1.2h3.4[5.9.1.2[>',
 }],
   ['Platanus', {
-  Walk: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
-  Jump: '~~~~~8.7:9.8.2:1E5:8.7.3:4E2:8.7.4:1E2A2E8.^7.5:4E8.8.4:1E3=8.8.4:3E9.5.4=5:9.1.4.9=1=9.1.^3.4=1K6=9.1.3.3=2K6=6.2q2.3.3=1K7=4.1:3q2.3.2=2.7=2.3:3q2.7.9:3:3q2.^7.9:2:6.8.7:9.',
-  Punch: '~~9.1.7:7.9.1.2:1E5:6.9.3:4E2:6.9.4:1E2A2E6.^9.5:4E6.9.1.4:1E3=6.9.1.4:3E1.4=2.9.1.1=5:1.6=1.9.7=1K6=1.8.2=2K4=1K1=3.2=1.8.3=2K3=1K7.8.4=2K2=1K7.8.6=1K1=8.9.5=1K1=8.9.8:7.9.9:6.9.4:1.4:6.^9.4q1.4q6.9.4q1.5q5.9.5q9.1.',
-  Lift: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
+  Walk: '9.2.1A>9.1.2?2<9.1.9.1.1?4<9.9.2?4<9.9.1?2<3J9.8.2?1<4;9.8.1?2<1;1A1;1A9.8.1?2<4;9.^8.1?2<3?9.1.8.1?5<1A9.7.1A1?5<1A9.6.2A1?5<2A8.5.3A1?5<2A8.5.2A1.1?5<2A1;7.5.2A1.1?5<1.1A1;7.5.2A1.2?4<9.1.5.2A1.1A1?4<9.1.5.2;1.1A1?4<9.1.8.2A1?4<9.8.2A2?3<9.8.2A1.2?3<8.8.2A2.4?1<7.7.3A2.2A9.1.',
+  Jump: '~~~~~~9.4.2;9.1A7.2;2.3A9.1A7.2A1.3A9.1.1A1.1?5.2A1.2A9.2.2A1<1?4.2A1.2A9.2.2A2<1?3.3A1.2A9.1.1.3<3?2.2A1.2A9.1.1A5<6?2A5?5.1A9<2<2A4<3?3.2.9<1<2A6<3?1.3.9<2<1?4;3<1?1A4.9<1<1?2;1A1;1J3<1A6.8<1?4;1J3<1.9.6.2;1A1;1J2<2.~~~~',
+  Punch: '~~9.7.4?1A3.9.5.3?3<1A3.9.4.2?4<5.9.3.2?4<6.9.2.1?3<3J6.9.2.1?2<1;1A1;1A6.9.1.1?2<4;7.9.1?3<3?8.9.1?6<8.9.1A5<9.8.2A5<9.^7.2A1?5<9.6.3A1?5<9.6.2A1.2?4<9.6.2;1.1A1?4<9.6.1;2.1A1?4<9.9.2A1?4<8.9.2A2?3<8.9.2A1.2?3<7.9.2A2.4?1<6.9.3A1.3A8.'
 }],
   ['La Parka', {
-  Walk: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
-  Jump: '~~~~~8.7:9.8.2:1E5:8.7.3:4E2:8.7.4:1E2A2E8.^7.5:4E8.8.4:1E3=8.8.4:3E9.5.4=5:9.1.4.9=1=9.1.^3.4=1K6=9.1.3.3=2K6=6.2q2.3.3=1K7=4.1:3q2.3.2=2.7=2.3:3q2.7.9:3:3q2.^7.9:2:6.8.7:9.',
-  Punch: '~~9.1.7:7.9.1.2:1E5:6.9.3:4E2:6.9.4:1E2A2E6.^9.5:4E6.9.1.4:1E3=6.9.1.4:3E1.4=2.9.1.1=5:1.6=1.9.7=1K6=1.8.2=2K4=1K1=3.2=1.8.3=2K3=1K7.8.4=2K2=1K7.8.6=1K1=8.9.5=1K1=8.9.8:7.9.9:6.9.4:1.4:6.^9.4q1.4q6.9.4q1.5q5.9.5q9.1.',
-  Lift: '~9.7:8.9.2:1E5:7.8.3:4E2:7.8.4:1E2A2E7.^8.5:4E7.9.4:1E3=7.9.4:3E8.9.1.5:9.9.1.5=9.8.4=>7.3=1K5=8.7.3=2K4=1K7.7.4=2K3=1K1=6.7.6=1K2=1K1=6.8.5=1K2=8.8.4:>8.9:7.8.4:1.4:7.^8.4q1.4q7.8.4q1.5q6.8.5q9.2.',
+  Walk: '~9.3A2[2A8.9.2A1[4F1A7.8.3A1[3F2[7.8.3A1[4F1[7.8.3A1[2F2A1F7.8.3A1[1A3F1A7.8.2A2[3F2A7.8.3[2A3F8.8.2[5A9.9.4A2F1A8.8.1A1F2A>7.1A1F2A5F8.6.2A1F5A1F2A7.6.2A1F2A5F2A6.6.1A1F6A1F3A6.6.1A1F4A4F8.6.1A1F1.5A1F1A8.8.9A7.8.2A1F1A1.2A1F1A7.^8.2A1F1A1.4A7.8.2A1F1A1.5A6.8.5A9.2.',
+  Jump: '~7.3A2[2A9.1.7.2A1[4F1A9.6.3A1[3F2[9.6.3A1[4F1[9.6.3A1[2F2A1F9.3.2A1.3A1[1A3F1A9.3.1A1F3A2[3F2A9.3.2A1F2A1[2A3F9.1.4.1A2F7A9.1.5.2A2F3A1F2A9.7.1A1F3A1F3A8.8.2A5F1A8.8.4A1F3A8.9.2A4F1A8.9.4A1F2A8.9.1.2A4F8.9.1.3A1F3A7.9.2.7A6.9.2.2A1F3A1F6.9.3.2A1F2A1F1A5.9.3.2A1F4A5.9.3.8A4.9.4.3A8.',
+  Punch: '~~9.1.3A2[2A7.9.1.2A1[4F1A6.9.3A1[3F2[6.9.3A1[4F1[6.9.3A1[2F2A1F6.9.3A1[1A3F1A6.9.2A2[3F2A6.9.3[2A3F4A3.9.2[7A3F1A2.8.1A1F4A1F1A2F3A1F1A1.7.1A1F2A5F2A2.3A1.7.1A1F5A1F1A8.7.1A2F1A5F8.7.3A1F3A1F1A8.8.4A4F8.9.5A1F1A8.9.9A6.9.2A1F1A1.2A1F1A6.^9.2A1F1A1.4A6.9.2A1F1A1.5A5.9.5A9.1.'
 }]
 ];
 
-const C_SPR = parseSprite('5.1J4.4.3J3.3.1?1J1?1J1?2.2.7J1.3.5,2.3.1,1A1,1A1,2.3.5,2.4.1X1,1X3.3.5X2.2.7Y1.', 10);
 const ANGEL_SPRITE = parseSprite('2.3<9.6.2.1<1.2<9.5.2.1<3?9.5.3.1<9.7.3.2<4.2?8.1?1?3.1<3.1?2<1?4.4?1<2?1.2<2.1?2<1?2.5?1<1.1<2?1.1<3.3<2.1?2<2}1.1.2<2?1}2<2.1<2.2?1<2}2.2.2<1?1}5<1.1}1?4<2.2.2<2?1}6<1}3<1?2.3.1<1?3}1<2?2<1}1<2?3.4.3?1}5?1}1<5.5.2?3}3<1}6.7.2}3<1}3<4.7.1}4<3.3<2.7.1<2}2<8.6.2}5<7.5.2}1?5<7.5.1}1?1}5<7.5.1?2}3<2}1<6.4.2?1}5<1}1<6.5.1?1}4<1?1<1}6.6.1}4<1?2}6.7.1?3<1?1<7.7.1?3<1.2<6.7.1?1<3K2<6.7.1K1<4K2<5.7.1{2K3{7.7.3{>^6.1K2{1,>^6.1K1{2,>^5.1K2{2,>^^5.1K1{3,>5.1K2{3,3{1K5.7.2{1,>^^^^^^^^^^^7.2{1,3{7.7.1{2,>', 20);
-const CROWD_SPRITES = [
-  { idle: C_SPR, cheer: C_SPR },
-  { idle: C_SPR, cheer: C_SPR },
-  { idle: C_SPR, cheer: C_SPR }
-];
 
+const CROWD_SPRITES = [
+  parseSprite('4.1J4.3.3J3.2.1?1J1?1J1?2.1.7J1.2.5,2.2.1,1A1,1A1,2.2.5,2.3.1X1,1X3.1.7X1.9Y', 9),
+  parseSprite('~~2.5A2.1{1.5A1.1{1[1.5{1.1[1[1.1{1A1{1A1{1.1[1[1.5{1.1[1[2.1[1{1[2.1[9[^', 9),
+  parseSprite('~~2.5A2.1,1.4A1[1.1,1G1.1A3,1A1[1G1G1.2A1,2A1.1G1G1.1A3,1A1.1G2G1A1G1,1G1A2G2G1A3G1A2G9G', 9),
+];
 const SPRITES = CH.map(c => {
   const s = {};
   for (const [frame, data] of Object.entries(c[1])) {
@@ -256,14 +261,14 @@ const P = {
 
 const ST = {
   IDLE: 'idle', WALK: 'walk', RUN: 'run', JUMP: 'jump',
-  PUNCH: 'punch', HIT: 'hit', DOWN: 'down', LIFT: 'lift', CARRY: 'carry', KO: 'ko', FLY: 'fly',
-  SUPLEX_A: 'suplex_a', SUPLEX_R: 'suplex_r'
+  PUNCH: 'punch', HIT: 'hit', DOWN: 'down', KO: 'ko', FLY: 'fly',
+  SUPLEX_A: 'suplex_a', SUPLEX_R: 'suplex_r', WIN: 'win'
 };
 
 const AI = [
-  { punchChance: 0.08, tackleChance: 0.05, jumpChance: 0.01, runChance: 0.3 },
-  { punchChance: 0.04, tackleChance: 0.02, jumpChance: 0.02, runChance: 0.1 },
-  { punchChance: 0.03, tackleChance: 0.02, jumpChance: 0.06, runChance: 0.2 },
+  { punchChance: 0.08, tackleChance: 0.05, jumpChance: 0.05, runChance: 0.3 },
+  { punchChance: 0.04, tackleChance: 0.02, jumpChance: 0.07, runChance: 0.1 },
+  { punchChance: 0.03, tackleChance: 0.02, jumpChance: 0.12, runChance: 0.2 },
 ];
 
 // Helpers
@@ -292,37 +297,99 @@ function damage(s, p, amt, kb) {
 class MenuScene extends Phaser.Scene {
   constructor() { super({ key: 'MenuScene' }); }
   create() {
-    this.add.rectangle(W / 2, H / 2, W, H, 0x1a0a2e, 1);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x0a0520, 1);
 
-    // Mexico City Skyline
+    // Stars
+    const sg = this.add.graphics();
+    for (let i = 0; i < 60; i++) {
+      const sx = Math.random() * W, sy = Math.random() * H * 0.5;
+      const br = 0.3 + Math.random() * 0.7;
+      sg.fillStyle(0xffffff, br);
+      sg.fillCircle(sx, sy, Math.random() < 0.2 ? 2 : 1);
+    }
+
+    // Moon
+    sg.fillStyle(0xffe8a0, 0.9);
+    sg.fillCircle(650, 80, 30);
+    sg.fillStyle(0x0a0520, 1);
+    sg.fillCircle(660, 72, 28);
+
+    // Mexico City Skyline - vibrant night buildings
     const gfx = this.add.graphics();
-    gfx.fillStyle(0x0d0718, 1);
-    gfx.fillRect(0, H - 200, 100, 200);
-    gfx.fillRect(100, H - 280, 80, 280);
-    gfx.fillRect(180, H - 150, 60, 150);
-    gfx.fillRect(240, H - 320, 70, 320);
-    gfx.fillRect(W - 80, H - 180, 80, 180);
-    gfx.fillRect(W - 190, H - 250, 110, 250);
-    gfx.fillRect(W - 270, H - 120, 80, 120);
-    gfx.fillRect(W - 350, H - 290, 80, 290);
+    const blds = [
+      { x: 0, w: 70, h: 160, c: 0x1a1040 },
+      { x: 65, w: 55, h: 240, c: 0x2a1555 },
+      { x: 115, w: 80, h: 180, c: 0x1e2848 },
+      { x: 190, w: 50, h: 130, c: 0x281838 },
+      { x: 235, w: 75, h: 300, c: 0x1a2050 },
+      { x: 305, w: 60, h: 140, c: 0x221540 },
+      { x: 440, w: 65, h: 160, c: 0x2a1848 },
+      { x: 500, w: 80, h: 260, c: 0x182050 },
+      { x: 575, w: 55, h: 190, c: 0x241535 },
+      { x: 625, w: 70, h: 130, c: 0x1e2848 },
+      { x: 690, w: 60, h: 280, c: 0x201545 },
+      { x: 745, w: 65, h: 200, c: 0x1a1838 },
+    ];
+    for (const b of blds) {
+      gfx.fillStyle(b.c, 1);
+      gfx.fillRect(b.x, H - b.h, b.w, b.h);
+      // Windows
+      for (let wy = H - b.h + 12; wy < H - 15; wy += 18) {
+        for (let wx = b.x + 8; wx < b.x + b.w - 8; wx += 14) {
+          const lit = Math.random() < 0.45;
+          gfx.fillStyle(lit ? 0xffdd44 : 0x0a0818, lit ? 0.8 : 0.5);
+          gfx.fillRect(wx, wy, 6, 8);
+        }
+      }
+    }
+
+    // Trees / parks at ground level
+    const treeSpots = [50, 195, 360, 510, 640];
+    for (const tx of treeSpots) {
+      gfx.fillStyle(0x0a3018, 1);
+      gfx.fillCircle(tx, H - 15, 18);
+      gfx.fillCircle(tx + 14, H - 20, 15);
+      gfx.fillCircle(tx - 10, H - 10, 13);
+      gfx.fillStyle(0x0d4020, 1);
+      gfx.fillCircle(tx + 4, H - 22, 12);
+    }
+
+    // Ground strip
+    gfx.fillStyle(0x111111, 1);
+    gfx.fillRect(0, H - 4, W, 4);
 
     // Angel of Independence
     const angelGfx = this.add.graphics();
     angelGfx.scale = 5;
+    angelGfx.setDepth(5);
     drawSprite(angelGfx, ANGEL_SPRITE, (W / 2) / 5, (H - 250) / 5);
 
     // Overlay to dim background slightly behind text
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.4);
 
+    // Coliseum searchlight beams (Mexican flag colors)
+    this.beamGfx = this.add.graphics();
+    this.beamGfx.setBlendMode(Phaser.BlendModes.ADD);
+    // [x, angle, speed, color]
+    this.beams = [
+      [150, 1.2, 0.4, 0x00aa00],
+      [W - 150, 1.9, 0.35, 0xcc0000],
+      [280, 1.5, -0.3, 0xcc0000],
+      [W - 280, 1.0, 0.5, 0x00aa00],
+      // 2 more of the same color
+      [150, 0.5, 0.4, 0x00aa00],
+      [W - 150, 1.3, 0.35, 0xcc0000],
+    ];
+
     // Titles
-    const title = this.add.text(W / 2, 100, 'LUCHA DE CÓDIGO', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
-    this.add.text(W / 2, 150, 'Platanus Hack 26 — CDMX', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(0.5);
+    const title = this.add.text(W / 2, 100, 'LUCHADORES', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(W / 2, 150, 'Platanus Hack 26 - CDMX', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(0.5);
     this.tweens.add({ targets: title, scale: 1.05, duration: 1000, yoyo: true, repeat: -1 });
 
     // Mode Selection
     this.opts = [
-      { label: '1 PLAYER', val: '1p' },
-      { label: '2 PLAYER', val: '2p' },
+      { label: '1 JUGADOR', val: '1p' },
+      { label: '2 JUGADORES', val: '2p' },
     ];
     this.cursor = 0;
     this.items = [];
@@ -334,7 +401,7 @@ class MenuScene extends Phaser.Scene {
       this.items.push({ bg, txt });
     }
 
-    this.add.text(W / 2, H - 40, 'UP/DOWN TO MOVE  START OR BTN1 TO SELECT', { fontFamily: 'monospace', fontSize: '14px', color: '#6f7a4a' }).setOrigin(0.5);
+    this.add.text(W / 2, H - 40, 'ARRIBA/ABAJO MOVER  START O BTN1 ELEGIR', { fontFamily: 'monospace', fontSize: '14px', color: '#6f7a4a' }).setOrigin(0.5);
     this.updateMenu();
   }
 
@@ -346,6 +413,21 @@ class MenuScene extends Phaser.Scene {
   }
 
   update() {
+    // Animate searchlight beams
+    const t = this.time.now / 1000;
+    this.beamGfx.clear();
+    for (const b of this.beams) {
+      const a = b[1] + Math.sin(t * b[2]) * 0.6;
+      const len = 1000;
+      const spread = 0.1;
+      const x1 = b[0] + Math.cos(a - spread) * len;
+      const y1 = H - Math.sin(a - spread) * len;
+      const x2 = b[0] + Math.cos(a + spread) * len;
+      const y2 = H - Math.sin(a + spread) * len;
+      this.beamGfx.fillStyle(b[3], 0.15);
+      this.beamGfx.fillTriangle(b[0], H, x1, y1, x2, y2);
+    }
+
     const axis = (isPressed('P1_D') || isPressed('P2_D') ? 1 : 0) - (isPressed('P1_U') || isPressed('P2_U') ? 1 : 0);
     if (axis !== 0) {
       this.cursor = Phaser.Math.Wrap(this.cursor + axis, 0, this.opts.length);
@@ -371,13 +453,11 @@ class CharSelectScene extends Phaser.Scene {
 
   create() {
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 1);
-    this.add.text(W / 2, 40, 'SELECT FIGHTER', { fontFamily: 'monospace', fontSize: '28px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(W / 2, 40, 'ELIGE LUCHADOR', { fontFamily: 'monospace', fontSize: '28px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
 
     this.mode = this.registry.get('mode') || '1p';
     this.charCount = CH.length; // Number of characters
     this.transitioning = false;
-    this.lastMoveT = [0, 0];
-    this.lastBtnT = [0, 0];
 
     // Player selections
     this.sel = [
@@ -394,10 +474,10 @@ class CharSelectScene extends Phaser.Scene {
     this.p2Label = this.add.text(W - 115, 80, this.mode === '2p' ? 'P2' : 'CPU', { fontFamily: 'monospace', fontSize: '20px', color: '#ff4444', fontStyle: 'bold' }).setOrigin(0.5);
     this.p1Name = this.add.text(115, 360, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5);
     this.p2Name = this.add.text(W - 115, 360, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5);
-    this.p1Ready = this.add.text(115, 390, '✓ READY', { fontFamily: 'monospace', fontSize: '16px', color: '#00ff00', fontStyle: 'bold' }).setOrigin(0.5).setVisible(false);
-    this.p2Ready = this.add.text(W - 115, 390, '✓ READY', { fontFamily: 'monospace', fontSize: '16px', color: '#00ff00', fontStyle: 'bold' }).setOrigin(0.5).setVisible(false);
+    this.p1Ready = this.add.text(115, 390, '✓ LISTO', { fontFamily: 'monospace', fontSize: '16px', color: '#00ff00', fontStyle: 'bold' }).setOrigin(0.5).setVisible(false);
+    this.p2Ready = this.add.text(W - 115, 390, '✓ LISTO', { fontFamily: 'monospace', fontSize: '16px', color: '#00ff00', fontStyle: 'bold' }).setOrigin(0.5).setVisible(false);
 
-    this.hintTxt = this.add.text(W / 2, H - 30, 'JOYSTICK TO MOVE · BTN1 OR START TO SELECT', { fontFamily: 'monospace', fontSize: '12px', color: '#6f7a4a' }).setOrigin(0.5);
+    this.hintTxt = this.add.text(W / 2, H - 30, 'JOYSTICK PARA MOVER · BTN1 O START ELEGIR', { fontFamily: 'monospace', fontSize: '12px', color: '#6f7a4a' }).setOrigin(0.5);
 
     // Generate preview textures for each character
     const tg = this.add.graphics();
@@ -474,29 +554,33 @@ class CharSelectScene extends Phaser.Scene {
     const s = this.sel[pIdx];
     if (s.confirmed) return;
 
-    // Movement with debounce
-    if (t - this.lastMoveT[pIdx] >= 180) {
-      let moved = false;
-      const cols = Math.min(3, this.charCount);
-      const rows = Math.ceil(this.charCount / cols);
-      const cCol = s.cursor % cols;
-      const cRow = Math.floor(s.cursor / cols);
+    let moved = false;
+    const cols = Math.min(3, this.charCount);
+    const rows = Math.ceil(this.charCount / cols);
+    const cCol = s.cursor % cols;
+    const cRow = Math.floor(s.cursor / cols);
 
-      if (isPressed(leftK) && cCol > 0) { s.cursor--; moved = true; }
-      else if (isPressed(rightK) && cCol < cols - 1 && s.cursor < this.charCount - 1) { s.cursor++; moved = true; }
-      else if (isPressed(upK) && cRow > 0) { s.cursor -= cols; moved = true; }
-      else if (isPressed(downK) && cRow < rows - 1) {
-        if (s.cursor + cols < this.charCount) s.cursor += cols;
-        else s.cursor = this.charCount - 1;
-        moved = true;
-      }
-      if (moved) { this.lastMoveT[pIdx] = t; snd('select'); }
+    if (isPressed(leftK)) {
+      s.cursor = (cCol > 0) ? s.cursor - 1 : s.cursor + (cols - 1);
+      if (s.cursor >= this.charCount) s.cursor = this.charCount - 1;
+      moved = true;
+    } else if (isPressed(rightK)) {
+      s.cursor = (cCol < cols - 1 && s.cursor + 1 < this.charCount) ? s.cursor + 1 : s.cursor - cCol;
+      moved = true;
+    } else if (isPressed(upK)) {
+      s.cursor = (cRow > 0) ? s.cursor - cols : s.cursor + (rows - 1) * cols;
+      if (s.cursor >= this.charCount) s.cursor -= cols;
+      moved = true;
+    } else if (isPressed(downK)) {
+      s.cursor = (s.cursor + cols < this.charCount) ? s.cursor + cols : s.cursor % cols;
+      moved = true;
     }
 
+    if (moved) snd('select');
+
     // Confirm
-    if ((isPressed(btnK) || (btnK2 && isPressed(btnK2))) && t - this.lastBtnT[pIdx] >= 250) {
+    if (isPressed(btnK) || (btnK2 && isPressed(btnK2))) {
       s.confirmed = true;
-      this.lastBtnT[pIdx] = t;
       snd('select');
     }
   }
@@ -673,15 +757,14 @@ class PlayScene extends Phaser.Scene {
     // Crowd textures
     const tg = this.add.graphics();
     for (let i = 0; i < CROWD_SPRITES.length; i++) {
-      tg.clear(); drawSprite(tg, CROWD_SPRITES[i].idle, 5, 5); tg.generateTexture('crowd' + i + '_idle', 10, 10);
-      tg.clear(); drawSprite(tg, CROWD_SPRITES[i].cheer, 5, 5); tg.generateTexture('crowd' + i + '_cheer', 10, 10);
+      tg.clear(); drawSprite(tg, CROWD_SPRITES[i], 4, 5); tg.generateTexture('crowd' + i, 9, 10);
     }
     tg.destroy();
 
     // Crowd (above top rope)
     this.ring.crowd = [];
-    const crowdRows = 4;
-    const crowdCols = 32;
+    const crowdRows = 7;
+    const crowdCols = 45;
     const startX = G.frontLX - 100;
     const endX = G.frontRX + 100;
     const spacingX = (endX - startX) / (crowdCols - 1);
@@ -695,10 +778,9 @@ class PlayScene extends Phaser.Scene {
         // Add slight random offset to break up the perfect grid
         const ox = Phaser.Math.Between(-10, 10);
         const oy = Phaser.Math.Between(-5, 5);
-        const sp = this.add.image(startX + c * spacingX + ox, startY + r * spacingY + oy, 'crowd' + type + '_idle');
+        const sp = this.add.image(startX + c * spacingX + ox, startY + r * spacingY + oy, 'crowd' + type);
         sp.setScale(3);
         sp.setDepth(sp.y - 500); // Behind the ring
-        sp.crowdType = type;
         sp.baseY = sp.y;
         sp.phase = Math.random() * Math.PI * 2;
         this.ring.crowd.push(sp);
@@ -726,21 +808,16 @@ class PlayScene extends Phaser.Scene {
 
     const G = this.ring.geometry;
 
-    // Crowd animation
+    // Crowd animation (phase updated in update loop)
     const isCheering = (this.p1.state === ST.DOWN || this.p1.state === ST.KO || 
                         this.p2.state === ST.DOWN || this.p2.state === ST.KO || this.timer <= 0);
+    const height = isCheering ? 8 : 3;
 
     for (const sp of this.ring.crowd) {
-      if (isCheering) {
-        sp.setTexture('crowd' + sp.crowdType + '_cheer');
-        sp.y = sp.baseY - Math.abs(Math.sin(this.time.now * 0.015 + sp.phase)) * 8;
-      } else {
-        sp.setTexture('crowd' + sp.crowdType + '_idle');
-        sp.y = sp.baseY;
-      }
+      sp.y = sp.baseY - Math.abs(Math.sin((this.crowdPhase || 0) + sp.phase)) * height;
     }
 
-    // Apron (front face below mat) — on front layer so it covers player feet
+    // Apron (front face below mat) - on front layer so it covers player feet
     fg.fillStyle(0x4a0000, 1);
     fg.beginPath();
     fg.moveTo(G.frontLX, G.frontY);
@@ -769,13 +846,13 @@ class PlayScene extends Phaser.Scene {
     g.lineStyle(2, 0xffffff, 0.8);
     g.strokePath();
 
-    // Draw ropes — back/left/right on g (behind players), front on fg (over players)
+    // Draw ropes - back/left/right on g (behind players), front on fg (over players)
     for (let i = 0; i < G.ropeLevels.length; i++) {
       const level = G.ropeLevels[i];
       const bY = G.backY - level.backOff;
       const fY = G.frontY - level.frontOff;
 
-      // Back rope — on back layer
+      // Back rope - on back layer
       g.lineStyle(3, level.color, 1);
       const rBack = this.ring.ropes.back;
       g.beginPath();
@@ -789,7 +866,7 @@ class PlayScene extends Phaser.Scene {
       g.lineTo(G.backRX, bY);
       g.strokePath();
 
-      // Front rope — on FRONT layer (over players)
+      // Front rope - on FRONT layer (over players)
       fg.lineStyle(3, level.color, 1);
       const rFront = this.ring.ropes.front;
       fg.beginPath();
@@ -803,7 +880,7 @@ class PlayScene extends Phaser.Scene {
       fg.lineTo(G.frontRX, fY);
       fg.strokePath();
 
-      // Left rope — on back layer
+      // Left rope - on back layer
       g.lineStyle(3, level.color, 1);
       const rLeft = this.ring.ropes.left;
       g.beginPath();
@@ -823,7 +900,7 @@ class PlayScene extends Phaser.Scene {
       g.lineTo(G.frontLX, fY);
       g.strokePath();
 
-      // Right rope — on back layer
+      // Right rope - on back layer
       g.lineStyle(3, level.color, 1);
       const rRight = this.ring.ropes.right;
       g.beginPath();
@@ -874,15 +951,12 @@ class PlayScene extends Phaser.Scene {
     p.comboTxt = this.add.text(x, y, '', { fontFamily: 'monospace', fontSize: '14px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
     p.comboTxt.setVisible(false);
 
-    p.debugState = this.add.text(x, y + P.size / 2 + 5, '', { fontFamily: 'monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#000000' }).setOrigin(0.5);
-
     return p;
   }
 
   createHUD() {
     this.hud = {};
-    this.hud.timer = this.add.text(W / 2, 20, '60', { fontFamily: 'monospace', fontSize: '32px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5).setScrollFactor(0);
-    this.hud.round = this.add.text(W / 2, 50, 'ROUND 1', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5).setScrollFactor(0);
+    this.hud.round = this.add.text(W / 2, 50, 'CAÍDA 1', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5).setScrollFactor(0);
 
     this.hud.hp1Bg = this.add.rectangle(120, 30, 200, 24, 0x000000).setScrollFactor(0);
     this.hud.hp1Bg.setStrokeStyle(2, 0xffffff);
@@ -899,6 +973,8 @@ class PlayScene extends Phaser.Scene {
 
   resetRound() {
     const G = this.ring.geometry;
+    
+    this.matchEnding = false;
 
     this.p1.x = G.backLX + 30; this.p1.y = G.backY + 30;
     this.p1.vx = 0; this.p1.vy = 0; this.p1.state = ST.IDLE; this.p1.health = P.maxHealth;
@@ -916,7 +992,6 @@ class PlayScene extends Phaser.Scene {
     this.p2.facing = -1;
     this.p2.body.setAngle(0); this.p2.body.setAlpha(1);
 
-    this.timer = 60; this.lastTime = this.time.now;
     // Reset rope deformations
     for (const side in this.ring.ropes) {
       const r = this.ring.ropes[side];
@@ -930,7 +1005,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   showFightText() {
-    const txt = this.add.text(W / 2, H / 2, 'FIGHT!', { fontFamily: 'monospace', fontSize: '64px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5).setScrollFactor(0);
+    const txt = this.add.text(W / 2, H / 2, '¡A PELEAR!', { fontFamily: 'monospace', fontSize: '64px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5).setScrollFactor(0);
     this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800, onComplete: () => txt.destroy() });
   }
 
@@ -947,23 +1022,34 @@ class PlayScene extends Phaser.Scene {
       drawY += (Math.random() - 0.5) * 10;
     }
 
+    if (p.state === ST.PUNCH) {
+      // Aggressive lunge: quick forward, short hold, quick back
+      const t = (p.punchTimer || 0) / 0.5;
+      let lungeAmt = 0;
+      if (t < 0.1) lungeAmt = t / 0.1;
+      else if (t < 0.4) lungeAmt = 1;
+      else lungeAmt = Math.max(0, 1 - (t - 0.4) / 0.1);
+      
+      drawX += lungeAmt * 15 * p.facing;
+    }
+
     p.body.setPosition(drawX, drawY);
 
     // Determine sprite frame based on state
     let frame = 'Walk';
     if (p.state === ST.JUMP || p.state === ST.FLY) frame = 'Jump';
-    else if (p.state === ST.PUNCH) frame = 'Punch';
-    else if (p.state === ST.DOWN || p.state === ST.CARRY || p.state === ST.KO) frame = 'Walk';
-    else if (p.state === ST.LIFT) frame = 'Lift';
+    else if (p.state === ST.WIN) frame = 'Walk';
+    else if (p.state === ST.PUNCH) {
+      const t = (p.punchTimer || 0) / 0.5;
+      frame = t < 0.4 ? 'Punch' : 'Walk';
+    }
+    else if (p.state === ST.DOWN || p.state === ST.KO) frame = 'Walk';
     else if (p.state === ST.SUPLEX_A) frame = 'Walk';
     else if (p.state === ST.SUPLEX_R) frame = 'Jump';
 
     p.body.clear();
     if (p.sprites && p.sprites[frame] && p.sprites[frame].length > 0) {
-      // Draw sprite. Because drawSprite iterates row/col, it works best unscaled, 
-      // but we apply flip by scaling the graphics object itself.
-      // Scaling it up by 2 makes 24x24 become 48x48 (which fits the arcade style nicely)
-      drawSprite(p.body, p.sprites[frame], 0, 0);
+      drawSprite(p.body, p.sprites[frame], 0, 0, { shadow: true });
     } else {
       // Fallback: draw rectangles manually onto the graphics object
       let fillC = p.color;
@@ -982,7 +1068,7 @@ class PlayScene extends Phaser.Scene {
       p.body.strokeRect(-P.size / 2, -P.size / 2, P.size, P.size);
     }
 
-    const baseDepth = (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.SUPLEX_A || p.state === ST.SUPLEX_R) ? p.shadowY : p.y;
+    const baseDepth = (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.SUPLEX_A || p.state === ST.SUPLEX_R || p.state === ST.WIN) ? p.shadowY : p.y;
     p.body.setDepth(baseDepth);
     p.shad.setDepth(baseDepth - 1);
     p.chargeBarBg.setDepth(baseDepth + 0.2);
@@ -993,7 +1079,7 @@ class PlayScene extends Phaser.Scene {
     const cw = (p.charge / P.chargeTime) * P.size;
     p.chargeBar.setSize(cw, 4);
 
-    if (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.SUPLEX_A || p.state === ST.SUPLEX_R) {
+    if (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.SUPLEX_A || p.state === ST.SUPLEX_R || p.state === ST.WIN) {
       p.shad.setPosition(p.shadowX, p.shadowY);
       p.shad.setVisible(true);
     } else { p.shad.setVisible(false); }
@@ -1001,18 +1087,25 @@ class PlayScene extends Phaser.Scene {
     // Face the correct direction. We scale by 4 here so 24x24 sprites appear larger (96x96)
     p.body.setScale(p.facing * 4, 4);
 
-    if (p.state === ST.DOWN || p.state === ST.CARRY || p.state === ST.KO) { p.body.setAngle(90); }
+    if (p.state === ST.DOWN || p.state === ST.KO) { p.body.setAngle(90); }
+    else if (p.state === ST.FLY && p.charName !== 2) {
+      p.body.setAngle(-90 * p.facing);
+    }
     else if (p.state === ST.SUPLEX_A) {
       p.body.setAngle(-90 * p.facing * Math.min(1, p.suplexTimer / 0.35));
     }
     else if (p.state === ST.SUPLEX_R && p.carriedBy) {
       p.body.setAngle(-180 * p.carriedBy.facing * Math.min(1, p.carriedBy.suplexTimer / 0.35));
     }
+    else if (p.state === ST.JUMP && p.charName === 5 && p.initialVy) {
+      const fraction = (p.vy - p.initialVy) / (-2 * p.initialVy);
+      p.body.setAngle(fraction * -360);
+    }
     else { p.body.setAngle(0); }
 
     if (p.comboTxt) {
       p.comboTxt.setDepth(baseDepth + 0.4);
-      if (p.combo > 1) { p.comboTxt.setPosition(p.x, p.y - P.size / 2 - 50); p.comboTxt.setText(p.combo + ' HIT COMBO!'); p.comboTxt.setVisible(true); }
+      if (p.combo > 1) { p.comboTxt.setPosition(p.x, p.y - P.size / 2 - 50); p.comboTxt.setText('¡COMBO DE ' + p.combo + '!'); p.comboTxt.setVisible(true); }
       else { p.comboTxt.setVisible(false); }
     }
 
@@ -1028,8 +1121,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   updateHUD() {
-    this.hud.timer.setText(Math.ceil(this.timer).toString());
-    this.hud.round.setText('ROUND ' + this.round);
+    this.hud.round.setText('CAÍDA ' + this.round);
     const w1 = (this.p1.health / P.maxHealth) * 200;
     const w2 = (this.p2.health / P.maxHealth) * 200;
     this.hud.hp1.setSize(w1, 20); this.hud.hp1.setFillStyle(this.p1.health > 30 ? C.bar : 0xff0000);
@@ -1166,14 +1258,18 @@ class PlayScene extends Phaser.Scene {
   }
 
   updateCrowd() {
-    // Crowd is now drawn in drawRing()
+    const isCheering = (this.p1.state === ST.DOWN || this.p1.state === ST.KO || 
+                        this.p2.state === ST.DOWN || this.p2.state === ST.KO);
+    const speed = isCheering ? 20 : 13;
+    const dt = this.game.loop.delta / 1000;
+    this.crowdPhase = (this.crowdPhase || 0) + (dt * speed);
   }
 
   // Unified physics engine for both player and AI
   // inputs: { up, down, left, right, btn1, btn2, btn3, btn4 }
   applyPhysics(p, dt, inputs, opp) {
     const s = this;
-    if (p.state === ST.KO || p.carriedBy) return;
+    if (p.state === ST.KO || p.state === ST.WIN || p.carriedBy) return;
 
     // Lift Cooldown
     if (p.liftCooldown > 0) p.liftCooldown -= dt;
@@ -1290,8 +1386,8 @@ class PlayScene extends Phaser.Scene {
       if (p.flyDist <= 0 || p.shadowX <= minX || p.shadowX >= maxX || p.shadowY <= minY || p.shadowY >= maxY) {
         p.state = ST.JUMP;
         p.isFlyingDrop = true;
-        p.shadowVX = 0;
-        p.shadowVY = 0;
+        p.shadowVX = p.flyDirX * 4;
+        p.shadowVY = p.flyDirY * 4;
         p.vy = 0; // Starts falling
       }
 
@@ -1345,7 +1441,10 @@ class PlayScene extends Phaser.Scene {
         p.y = p.shadowY;
         p.vy = 0;
         p.isFlyingDrop = false;
-        p.state = ST.IDLE; snd('slam'); particles(s, p.x, p.y, 0xffffff, 6);
+        p.state = ST.IDLE; 
+        snd('slam'); 
+        particles(s, p.x, p.y, 0xffffff, 6);
+        shake(s, 0.005, 0.1);
       }
 
       if ((inputs.btn1 || p.isFlyingDrop) && p.vy > 0 && p.jumpHeight < 50) {
@@ -1358,43 +1457,6 @@ class PlayScene extends Phaser.Scene {
           snd('slam'); particles(s, opp.x, opp.y, 0xffffff, 8);
         }
       }
-      return;
-    }
-
-    if (p.state === ST.LIFT) {
-      // Carrying opponent - can move (slower) and throw
-      let mx = 0, my = 0;
-      if (inputs.up) my -= 1; if (inputs.down) my += 1;
-      if (inputs.left) mx -= 1; if (inputs.right) mx += 1;
-      if (mx !== 0 && my !== 0) { mx *= 0.707; my *= 0.707; }
-
-      const carrySpd = P.walkSpd * 0.5; // Slower when carrying
-      p.vx = mx * carrySpd; p.vy = my * carrySpd;
-      p.x += p.vx; p.y += p.vy;
-
-      if (mx !== 0) p.facing = mx > 0 ? 1 : -1;
-
-      // Update carried opponent position
-      if (p.carry) {
-        p.carry.x = p.x;
-        p.carry.y = p.y - P.size * 0.5; // On top of carrier
-        p.carry.facing = p.facing;
-      }
-
-      // Throw
-      if (inputs.btn1) {
-        const opp = p.carry;
-        if (opp) {
-          const throwKb = p.facing * 15; // Just a little force
-          damage(s, opp, 0, throwKb); // 0 damage
-          opp.state = ST.DOWN; opp.downTimer = 1.0; opp.liftCooldown = 1.5; // Cooldown to prevent infinite lift combo
-          p.state = ST.IDLE; p.carry = null; opp.carriedBy = null;
-          p.combo = 0; opp.combo = 0;
-          snd('slam'); particles(s, opp.x, opp.y, 0xffffff, 8);
-        }
-      }
-
-      s.applyRopeSpring(p, dt, false);
       return;
     }
 
@@ -1420,6 +1482,7 @@ class PlayScene extends Phaser.Scene {
       p.charging = false;
       const force = P.jumpForce + (p.charge / P.chargeTime) * (P.jumpMax - P.jumpForce);
       p.vy = -force;
+      p.initialVy = -force;
       p.jumpHeight = force;
       p.state = ST.JUMP;
       p.shadowX = p.x;
@@ -1431,23 +1494,11 @@ class PlayScene extends Phaser.Scene {
     }
 
     if (inputs.btn1 && (p.state === ST.IDLE || p.state === ST.WALK || p.state === ST.RUN)) {
-      if (opp.state === ST.DOWN && opp.carriedBy === null && dist(p, opp) < P.size * 1.5 && (opp.liftCooldown || 0) <= 0) {
-        p.state = ST.LIFT; opp.state = ST.CARRY; opp.carriedBy = p; p.carry = opp;
-        snd('slam');
-      } else if (p.carry && opp.state === ST.CARRY) {
-        const throwKb = p.facing * 15;
-        damage(s, opp, 0, throwKb);
-        opp.state = ST.DOWN; opp.downTimer = 1.0; opp.liftCooldown = 1.5;
-        p.state = ST.IDLE; p.carry = null; opp.carriedBy = null;
-        p.combo = 0; opp.combo = 0;
-        shake(s, 0.012, 0.15);
-        snd('slam'); particles(s, opp.x, opp.y, 0xffffff, 8);
-      } else {
         // Always punch, even if no opponent is near
         p.state = ST.PUNCH;
         p.punchTimer = 0;
         if (dist(p, opp) < P.size * 1.2 && opp.state !== ST.JUMP) {
-          if (p.facing === opp.facing && opp.state !== ST.DOWN && opp.state !== ST.HIT && opp.state !== ST.LIFT) {
+          if (p.facing === opp.facing && opp.state !== ST.DOWN && opp.state !== ST.HIT) {
             // SUPLEX! Punching from behind
             p.state = ST.SUPLEX_A; p.suplexTimer = 0; p.carry = opp;
             p.shadowY = p.y; p.shadowX = p.x;
@@ -1471,11 +1522,9 @@ class PlayScene extends Phaser.Scene {
           snd('punch');
         }
       }
-    }
-
     if (p.invuln > 0) p.invuln -= dt;
 
-    if (p.state !== ST.JUMP && p.state !== ST.FLY && p.state !== ST.HIT && p.state !== ST.DOWN && p.state !== ST.LIFT && p.state !== ST.CARRY && p.state !== ST.KO && p.state !== ST.PUNCH && p.state !== ST.SUPLEX_A && p.state !== ST.SUPLEX_R) {
+    if (p.state !== ST.JUMP && p.state !== ST.FLY && p.state !== ST.HIT && p.state !== ST.DOWN && p.state !== ST.KO && p.state !== ST.PUNCH && p.state !== ST.SUPLEX_A && p.state !== ST.SUPLEX_R) {
       if (p.vx !== 0 || p.vy !== 0) p.state = ST.WALK;
       else p.state = ST.IDLE;
     }
@@ -1549,7 +1598,9 @@ class PlayScene extends Phaser.Scene {
         else if (r < personality.runChance + personality.jumpChance * 2) p.aiState = 'jump_attack';
         else p.aiState = 'circle';
       } else {
-        p.aiState = Math.random() < personality.runChance ? 'approach' : 'wait';
+        const r = Math.random();
+        if (r < personality.jumpChance * 2) p.aiState = 'rope_bounce';
+        else p.aiState = Math.random() < personality.runChance ? 'approach' : 'wait';
       }
 
       if (personality === AI.mistico && Math.random() < 0.15) p.aiState = 'jump_attack';
@@ -1558,7 +1609,7 @@ class PlayScene extends Phaser.Scene {
     // Execute AI strategy
     switch (p.aiState) {
       case 'approach':
-        if (d > 60) {
+        if (d > P.size * 1.1) {
           // Human-like Y-axis first alignment
           if (Math.abs(dy) > P.size * 0.8) {
             inputs.up = dy < 0; inputs.down = dy > 0;
@@ -1621,7 +1672,7 @@ class PlayScene extends Phaser.Scene {
       case 'capitalize':
         if (opp.state !== ST.DOWN && opp.state !== ST.HIT) {
           p.aiState = 'approach';
-        } else if (d > 50) {
+        } else if (d > P.size * 1.1) {
           const ang = Math.atan2(dy, dx);
           const spd = P.walkSpd;
           const mx = Math.cos(ang) * spd;
@@ -1639,32 +1690,51 @@ class PlayScene extends Phaser.Scene {
         }
         break;
 
-      case 'throw':
-        // Throw the carried opponent
-        if (p.state === ST.LIFT && p.carry) {
-          inputs.btn1 = true;
-        } else {
-          p.aiState = 'approach';
+
+
+      case 'rope_bounce':
+        if (p.state !== ST.JUMP && p.state !== ST.FLY) {
+          const bounds = s.getRingBounds(p.shadowY);
+          const distL = Math.abs(p.shadowX - bounds.left);
+          const distR = Math.abs(p.shadowX - bounds.right);
+          
+          inputs.left = distL < distR;
+          inputs.right = distR <= distL;
+          
+          if (Math.min(distL, distR) < 120) {
+            inputs.btn2 = true; // Jump!
+            p.aiJumpOffset = (Math.random() - 0.5) * 250;
+            p.aiState = 'in_air'; p.aiTimer = 1.5;
+          }
         }
         break;
-
-
 
       case 'jump_attack':
         if (p.state !== ST.JUMP) {
           inputs.btn2 = true;
-          p.aiState = 'in_air'; p.aiTimer = 0.5;
+          p.aiJumpOffset = (Math.random() - 0.5) * 250;
+          p.aiState = 'in_air'; p.aiTimer = 1.0;
         }
         break;
 
       case 'in_air':
         if (p.state === ST.IDLE) {
-          p.aiState = 'approach'; // Landed without doing a body slam
-        } else if (p.vy > 0 && p.jumpHeight < 50) {
-          const shadowDist = Math.sqrt((p.shadowX - opp.x) ** 2 + (p.shadowY - opp.y) ** 2);
-          if (shadowDist < P.size * 1.5) {
-            inputs.btn1 = true;
-            p.aiState = 'retreat'; p.aiTimer = 1.0;
+          p.aiState = 'approach'; // Landed
+        } else if (p.state === ST.JUMP || p.state === ST.FLY) {
+          // In the air, steer towards opponent with an offset so we don't always land perfectly on them
+          if (p.state === ST.JUMP) {
+            const targetX = opp.x + (p.aiJumpOffset || 0);
+            const tdx = targetX - p.shadowX;
+            inputs.left = tdx < -10; inputs.right = tdx > 10;
+          }
+          
+          if (p.vy > 0 && p.jumpHeight < 60) {
+            const shadowDist = Math.sqrt((p.shadowX - opp.x) ** 2 + (p.shadowY - opp.y) ** 2);
+            // Only body slam if close, but sometimes randomly hold back
+            if (shadowDist < P.size * 2 && Math.random() < 0.7) {
+              inputs.btn1 = true;
+              p.aiState = 'retreat'; p.aiTimer = 1.0;
+            }
           }
         }
         break;
@@ -1684,16 +1754,13 @@ class PlayScene extends Phaser.Scene {
   }
 
   update() {
-    const dt = this.game.loop.delta / 1000;
+    let dt = this.game.loop.delta / 1000;
+    if (this.matchEnding) dt *= 0.35;
 
     // Reset rope targets at start of frame so they can accumulate from all players
     for (const side in this.ring.ropes) {
       this.ring.ropes[side].target = 0;
     }
-
-    // Timer
-    if (this.time.now - this.lastTime > 1000) { this.timer--; this.lastTime = this.time.now; }
-    if (this.timer <= 0) { this.timer = 0; this.checkKO(); }
 
     // Pause
     if (isPressed('START1') || isPressed('START2')) {
@@ -1707,7 +1774,7 @@ class PlayScene extends Phaser.Scene {
     else this.updatePlayer(this.p2, dt, this.p1);
 
     // Check KO
-    this.checkKO();
+    this.checkKO(dt);
 
     // Visuals
     this.updatePlayerVisuals(this.p1);
@@ -1716,19 +1783,69 @@ class PlayScene extends Phaser.Scene {
     this.updateRopes();
     this.updateCrowd();
 
-    // Camera Pan
-    const midX = (this.p1.x + this.p2.x) / 2;
-    let targetScrollX = midX - W / 2;
-    const G = this.ring.geometry;
-    const minScrollX = G.frontLX - 50;
-    const maxScrollX = G.frontRX + 50 - W;
-    targetScrollX = Phaser.Math.Clamp(targetScrollX, minScrollX, maxScrollX);
+    // Camera Pan and Zoom
+    let targetMidX = (this.p1.x + this.p2.x) / 2;
+    let targetMidY = H / 2;
+    let targetZoom = 1;
+
+    if (this.matchEnding) {
+      targetMidX = (this.p1.x + this.p2.x) / 2;
+      targetMidY = (this.p1.y + this.p2.y) / 2 - P.size;
+      targetZoom = 1.4;
+    }
+
+    this.cameras.main.zoom += (targetZoom - this.cameras.main.zoom) * 0.05;
+
+    let targetScrollX = targetMidX - W / 2;
+    let targetScrollY = targetMidY - H / 2;
+
+    if (!this.matchEnding) {
+      const G = this.ring.geometry;
+      const minScrollX = G.frontLX - 50;
+      const maxScrollX = G.frontRX + 50 - W;
+      targetScrollX = Phaser.Math.Clamp(targetScrollX, minScrollX, maxScrollX);
+      targetScrollY = 0;
+    }
+
     this.cameras.main.scrollX += (targetScrollX - this.cameras.main.scrollX) * 0.1;
+    this.cameras.main.scrollY += (targetScrollY - this.cameras.main.scrollY) * 0.1;
 
     clearPressed();
   }
 
-  checkKO() {
+  checkKO(dt) {
+    if (this.matchEnding) {
+      this.endTimer -= dt;
+      
+      const winnerP = this.lastWinner === 'p1' ? this.p1 : this.lastWinner === 'p2' ? this.p2 : null;
+      if (winnerP && winnerP.state === ST.WIN) {
+        if (winnerP.jumpHeight <= 0 && winnerP.vy >= 0) {
+          winnerP.vy = -P.jumpForce;
+          snd('jump');
+        }
+        winnerP.vy += P.jumpGrav * dt * 60;
+        winnerP.jumpHeight -= winnerP.vy * dt * 60;
+        if (winnerP.jumpHeight <= 0) {
+          winnerP.jumpHeight = 0;
+          winnerP.vy = 0;
+        }
+        winnerP.y = winnerP.shadowY - winnerP.jumpHeight;
+      }
+
+      if (this.endTimer <= 0) {
+        if (this.scores.p1 >= 2 || this.scores.p2 >= 2 || this.round >= 3) {
+          this.registry.set('winner', this.lastWinner);
+          this.registry.set('finalScores', { ...this.scores });
+          this.scene.start('MatchOverScene');
+        } else {
+          this.round++;
+          this.registry.set('round', this.round);
+          this.scene.start('RoundOverScene', { winner: this.lastWinner });
+        }
+      }
+      return;
+    }
+
     if (this.p1.health <= 0 && this.p1.state !== ST.KO) {
       this.p1.state = ST.KO; this.p1.body.setAngle(90); snd('bell');
     }
@@ -1736,23 +1853,24 @@ class PlayScene extends Phaser.Scene {
       this.p2.state = ST.KO; this.p2.body.setAngle(90); snd('bell');
     }
 
-    if (this.p1.state === ST.KO || this.p2.state === ST.KO || this.timer <= 0) {
-      const winner = this.p1.state === ST.KO ? 'p2' : this.p2.state === ST.KO ? 'p1' : this.p1.health > this.p2.health ? 'p1' : this.p2.health > this.p1.health ? 'p2' : 'draw';
+    if (this.p1.state === ST.KO || this.p2.state === ST.KO) {
+      const winner = this.p1.state === ST.KO ? 'p2' : this.p2.state === ST.KO ? 'p1' : 'draw';
+
+      this.matchEnding = true;
+      this.endTimer = 1.2;
+      this.lastWinner = winner;
 
       if (winner !== 'draw') {
         this.scores[winner]++;
         this.registry.set('scores', this.scores);
+        const wp = winner === 'p1' ? this.p1 : this.p2;
+        wp.state = ST.WIN;
+        wp.jumpHeight = 0;
+        wp.vy = 0;
+        wp.shadowX = wp.x;
+        wp.shadowY = wp.y;
       }
 
-      if (this.scores.p1 >= 2 || this.scores.p2 >= 2 || this.round >= 3) {
-        this.registry.set('winner', winner);
-        this.registry.set('finalScores', { ...this.scores });
-        this.scene.start('MatchOverScene');
-      } else {
-        this.round++;
-        this.registry.set('round', this.round);
-        this.scene.start('RoundOverScene', { winner });
-      }
     }
   }
 }
@@ -1761,8 +1879,8 @@ class PauseScene extends Phaser.Scene {
   constructor() { super({ key: 'PauseScene', active: false }); }
   create() {
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7);
-    this.add.text(W / 2, H / 2, 'PAUSED', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
-    this.add.text(W / 2, H / 2 + 50, 'PRESS START TO RESUME', { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+    this.add.text(W / 2, H / 2, 'PAUSADO', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(W / 2, H / 2 + 50, 'PRESIONA START PARA CONTINUAR', { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
   }
   update() {
     if (isPressed('START1') || isPressed('START2')) {
@@ -1778,7 +1896,7 @@ class RoundOverScene extends Phaser.Scene {
   create(data) {
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8);
     const winner = data.winner;
-    this.add.text(W / 2, H / 2, winner === 'p1' ? 'P1 WINS' : 'P2 WINS', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(W / 2, H / 2, winner === 'p1' ? 'P1 GANA' : 'P2 GANA', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
     this.time.delayedCall(2000, () => { this.scene.start('PlayScene'); });
   }
 }
@@ -1787,26 +1905,26 @@ class MatchOverScene extends Phaser.Scene {
   constructor() { super({ key: 'MatchOverScene' }); }
   create() {
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8);
-    const winner = this.registry.get('winner');
-    const scores = this.registry.get('finalScores');
-    const mode = this.registry.get('mode');
+    const winner = this.registry.get('winner') || 'draw';
+    const scores = this.registry.get('finalScores') || { p1: 0, p2: 0 };
+    const mode = this.registry.get('mode') || '1p';
     const tournament = this.registry.get('tournament') || 0;
 
     if (mode === '1p' && winner === 'p1') {
       if (tournament < 3) {
         this.registry.set('tournament', tournament + 1);
-        this.add.text(W / 2, H / 2 - 30, 'OPPONENT ' + (tournament + 1) + ' DEFEATED!', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
-        this.add.text(W / 2, H / 2 + 30, 'NEXT: ' + (tournament + 2) + '/3', { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+        this.add.text(W / 2, H / 2 - 30, '¡OPONENTE ' + (tournament + 1) + ' DERROTADO!', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.text(W / 2, H / 2 + 30, 'SIGUIENTE: ' + (tournament + 2) + '/3', { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
         this.registry.set('round', 1);
         this.registry.set('scores', { p1: 0, p2: 0 });
         this.time.delayedCall(2000, () => { this.scene.start('PlayScene'); });
         return;
       } else {
-        this.add.text(W / 2, H / 2 - 30, 'TOURNAMENT CHAMPION!', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
-        this.add.text(W / 2, H / 2 + 30, 'ALL 3 OPPONENTS DEFEATED', { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+        this.add.text(W / 2, H / 2 - 30, '¡CAMPEÓN DEL TORNEO!', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.text(W / 2, H / 2 + 30, 'LOS 3 OPONENTES HAN SIDO DERROTADOS', { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
       }
     } else {
-      this.add.text(W / 2, H / 2 - 30, winner === 'draw' ? 'DRAW!' : (winner === 'p1' ? 'P1' : 'P2') + ' WINS!', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
+      this.add.text(W / 2, H / 2 - 30, winner === 'draw' ? '¡EMPATE!' : '¡' + (winner === 'p1' ? 'P1' : 'P2') + ' GANA!', { fontFamily: 'monospace', fontSize: '48px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0.5);
       this.add.text(W / 2, H / 2 + 30, 'P1: ' + scores.p1 + ' - P2: ' + scores.p2, { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
     }
 
