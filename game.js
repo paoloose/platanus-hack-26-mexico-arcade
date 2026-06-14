@@ -290,6 +290,7 @@ function damage(s, p, amt, kb) {
   p.hp -= amt; if (p.hp < 0) p.hp = 0;
   p.vx += kb;
   p.combo = 0; // Victim loses their combo progress
+  p.charge = 0; p.charging = false; // Reset jump charge
   if (p.jh > 0) {
     p.jh = 0;
     p.y = p.sy; // Snap to ground if hit out of the air
@@ -598,12 +599,12 @@ class CharSelectScene extends Phaser.Scene {
     this.pvwGfx = [this.add.graphics().setDepth(10), this.add.graphics().setDepth(10)];
 
     // Text objects
-    this.p1Label = this.add.text(115, 80, 'P1', t(20, '#4488ff', 1)).setOrigin(0.5).setDepth(10);
-    this.p2Label = this.add.text(W - 115, 80, this.mode === '2p' ? 'P2' : 'CPU', t(20, '#ff4444', 1)).setOrigin(0.5).setDepth(10);
-    this.p1Name = this.add.text(115, 360, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
-    this.p2Name = this.add.text(W - 115, 360, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
-    this.p1Ready = this.add.text(115, 390, '✓ LISTO', t(16, '#00ff00', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
-    this.p2Ready = this.add.text(W - 115, 390, '✓ LISTO', t(16, '#00ff00', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
+    this.p1Label = this.add.text(115, 120, 'P1', t(20, '#4488ff', 1)).setOrigin(0.5).setDepth(10);
+    this.p2Label = this.add.text(W - 115, 120, this.mode === '2p' ? 'P2' : 'CPU', t(20, '#ff4444', 1)).setOrigin(0.5).setDepth(10);
+    this.p1Name = this.add.text(115, 410, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
+    this.p2Name = this.add.text(W - 115, 410, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
+    this.p1Ready = this.add.text(115, 440, 'LISTO', t(16, '#00ff00', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
+    this.p2Ready = this.add.text(W - 115, 440, 'LISTO', t(16, '#00ff00', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
 
     this.hintTxt = this.add.text(W / 2, H - 30, 'JOYSTICK PARA MOVER · BTN1 O START ELEGIR', t(12, '#6f7a4a')).setOrigin(0.5).setDepth(10);
 
@@ -793,8 +794,8 @@ class CharSelectScene extends Phaser.Scene {
     this.p2Ready.setVisible(this.sel[1].confirmed);
 
     // Draw large previews on sides
-    this.drawPreview(0, 115, 220);
-    if (this.mode === '2p' || this.aiPicking || this.sel[1].confirmed) this.drawPreview(1, W - 115, 220);
+    this.drawPreview(0, 115, 270);
+    if (this.mode === '2p' || this.aiPicking || this.sel[1].confirmed) this.drawPreview(1, W - 115, 270);
   }
 
   drawPreview(pIdx, cx, cy) {
@@ -1140,10 +1141,10 @@ class PlayScene extends Phaser.Scene {
 
     // Winner Container
     this.hud.winContainer = this.add.container(0, H / 2).setVisible(false);
-    const winBg = this.add.rectangle(0, 0, W, 150, 0x000000, 0.8).setOrigin(0.5, 1);
+    const winBg = this.add.rectangle(0, 0, W, 150, 0x000000, 0.5).setOrigin(0.5, 1);
     this.hud.winTitle = this.add.text(0, -110, '.', t(24, '#ffffff')).setOrigin(0.5);
     this.hud.winName = this.add.text(0, -70, 'NAME', t(48, '#e1ff00', 1)).setOrigin(0.5);
-    this.hud.winPrompt = this.add.text(0, -30, '(PRESIONA CUALQUIER BOTÓN PARA CONTINUAR)', t(16, '#ffffff')).setOrigin(0.5).setVisible(false);
+    this.hud.winPrompt = this.add.text(0, -H / 2, 'PRESIONA CUALQUIER BOTÓN PARA CONTINUAR', t(24, '#ffff00', 1)).setOrigin(0.5).setStroke('#000000', 6).setVisible(false);
     this.hud.winContainer.add([winBg, this.hud.winTitle, this.hud.winName, this.hud.winPrompt]);
 
     this.hud.container.add([
@@ -1195,27 +1196,56 @@ class PlayScene extends Phaser.Scene {
   showFightText() {
     this.rs = true;
     let step = 3;
-    const txt = this.add.text(W / 2, H / 2, '3', t(64, '#ffffff', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
+
+    // Create the background and text container for the bottom
+    const winBg = this.add.rectangle(W / 2, H, W, 150, 0x000000, 0.5).setOrigin(0.5, 1).setScrollFactor(0).setDepth(2400);
 
     let caidaText = ['PRIMERA CAÍDA', 'SEGUNDA CAÍDA', 'TERCERA CAÍDA'][this.round - 1] || 'CAÍDA ' + this.round;
-    const title = this.add.text(W / 2, H / 2 - 80, caidaText, t(32, '#e1ff00', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
+    const title = this.add.text(W / 2, H - 110, caidaText, t(32, '#ffff00', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
+    const subtitle = this.add.text(W / 2, H - 70, 'GANA EL MEJOR DE 3 CAÍDAS', t(16, '#ffffff', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
+
+    const txt = this.add.text(W / 2, H / 2, '¡A PELEAR!', t(64, '#f7bb1b', 1)).setOrigin(0.5).setStroke('#915f01', 8).setScrollFactor(0).setDepth(2500);
+    txt.setVisible(false);
+
+    // Sprites for 3, 2, 1
+    const sprites = [
+      parseSprite('~5.1N2<4.4.3<1N4.3.1<2N1<1N4.3.2N1.1<1N4.6.1<1N4.^^^^^~', 12),
+      parseSprite('~3.5N4.2.1N5<1N3.2.2<2.2<1N3.7.1<1N3.6.2<1N3.5.2<1N4.4.2<1N5.3.2<1N3.1N2.2.3<5N2.2.7<1N2.~', 12),
+      parseSprite('~3.7N2.2.4<>7.1<2N2.6.2<1N3.4.3<2N3.5.4<1N2.2.1<4.2<1N2.2.2<2.3<1N2.2.7<1N2.3.3N>~', 12)
+    ];
+
+    const gfx = this.add.graphics({ x: W / 2, y: H / 2 }).setScrollFactor(0).setDepth(2500);
+
+    const drawNumber = (n) => {
+      gfx.clear();
+      drawSprite(gfx, sprites[n - 1], 0, 0);
+    };
+
+    drawNumber(step);
+    gfx.setScale(8);
+    gfx.setAlpha(1);
 
     const nextStep = () => {
       step--;
       if (step > 0) {
-        txt.setText(step.toString()).setScale(1).setAlpha(1);
-        this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800, onComplete: nextStep });
+        drawNumber(step);
+        gfx.setScale(8).setAlpha(1);
+        this.tweens.add({ targets: gfx, scale: 12, alpha: 0, duration: 800, onComplete: nextStep });
       } else if (step === 0) {
-        txt.setText('¡A PELEAR!').setScale(1).setAlpha(1).setColor('#ff0000');
+        gfx.destroy();
+        txt.setVisible(true);
+        txt.setScale(1).setAlpha(1);
         this.rs = false;
         this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800, onComplete: nextStep });
-        this.tweens.add({ targets: title, alpha: 0, duration: 800 });
+        this.tweens.add({ targets: [title, subtitle, winBg], alpha: 0, duration: 800 });
       } else {
         txt.destroy();
         title.destroy();
+        subtitle.destroy();
+        winBg.destroy();
       }
     };
-    this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800, onComplete: nextStep });
+    this.tweens.add({ targets: gfx, scale: 12, alpha: 0, duration: 800, onComplete: nextStep });
   }
 
   updatePlayerVisuals(p) {
@@ -1253,6 +1283,15 @@ class PlayScene extends Phaser.Scene {
       drawY += Math.abs(Math.sin(p.wt * 15)) * -6; // vertical bob
     } else {
       p.wt = 0;
+    }
+
+    let sx = 4, sy = 4;
+    if (p.charging && p.st !== ST.JUMP) {
+      const prog = p.charge / P.chargeTime;
+      sy = 4 - (prog * 1.5);
+      sx = 4 + (prog * 1.0);
+      drawY += (4 - sy) * 12; // Compensate to keep feet on ground
+      if (prog > 0.8) drawX += (Math.random() - 0.5) * 4; // Vibrate
     }
 
     p.body.setPosition(drawX, drawY);
@@ -1308,7 +1347,7 @@ class PlayScene extends Phaser.Scene {
     } else { p.shad.setVisible(false); }
 
     // Face the correct direction. We scale by 4 here so 24x24 sprites appear larger (96x96)
-    p.body.setScale(p.f * 4, 4);
+    p.body.setScale(p.f * sx, sy);
 
     if (p.st === ST.DOWN || p.st === ST.KO) { p.body.setAngle(90); }
     else if (p.st === ST.ONROPE) { p.body.setAngle(0); }
@@ -1623,7 +1662,7 @@ class PlayScene extends Phaser.Scene {
         if (isNaN(p.flyDirY)) p.flyDirY = 0;
 
         p.vy = -12;
-        const frames = 36;
+        const frames = 46.5;
         let spd = targetDist / frames;
 
         p.svx = p.flyDirX * spd;
@@ -1780,7 +1819,7 @@ class PlayScene extends Phaser.Scene {
       p.sy = p.y;
       s.applyRopeSpring(p, dt, false);
 
-      if (!p.hb && opp.st !== ST.DOWN && opp.st !== ST.HIT && opp.st !== ST.KO && opp.st !== ST.SUPLEX_A && opp.st !== ST.SUPLEX_R) {
+      if (!p.hb && ![6,7,8,10,11].includes(opp.st)) { // ![ST.HIT, ST.DOWN, ST.KO, ST.SUPLEX_A, ST.SUPLEX_R]
         let isPunching = inputs.btn1;
         let hitboxRange = isPunching ? P.size * 1.8 : P.size * 1.0;
 
@@ -1934,7 +1973,7 @@ class PlayScene extends Phaser.Scene {
         // Always punch, even if no opponent is near
         p.st = ST.PUNCH;
         p.pt = 0;
-        const isAntiAir = (opp.st === ST.JUMP || opp.st === ST.FLY || opp.st === ST.ONROPE);
+        const isAntiAir = [4,9,13].includes(opp.st); // [ST.JUMP, ST.FLY, ST.ONROPE]
         // Extend vertical hitbox for anti-airs so grounded punches reach up to hitting jumping/roping opponents
         const vertHitbox = isAntiAir ? P.size * 3.0 : P.size * 1.0;
         if (Math.abs(p.sx - opp.sx) < P.size * 1.6 && Math.abs(p.sy - opp.y) < vertHitbox) {
@@ -1994,7 +2033,7 @@ class PlayScene extends Phaser.Scene {
 
     if (p.invuln > 0) p.invuln -= dt;
 
-    if (p.st !== ST.JUMP && p.st !== ST.FLY && p.st !== ST.ONROPE && p.st !== ST.HIT && p.st !== ST.DOWN && p.st !== ST.KO && p.st !== ST.PUNCH && p.st !== ST.SUPLEX_A && p.st !== ST.SUPLEX_R && p.st !== ST.BULL_CHARGE && p.st !== ST.BULL_BOUNCE && p.st !== ST.BULL_REBOUND) {
+    if ([1,2,3,12].includes(p.st)) { // [ST.IDLE, ST.WALK, ST.RUN, ST.WIN] - i.e. not in an active or busy state
       if (p.vx !== 0 || p.vy !== 0) p.st = ST.WALK;
       else p.st = ST.IDLE;
     }
@@ -2043,7 +2082,7 @@ class PlayScene extends Phaser.Scene {
     }
 
     const oppInAir = (opp.st === ST.JUMP || opp.st === ST.FLY || opp.st === ST.ONROPE);
-    const canAct = (p.st !== ST.JUMP && p.st !== ST.FLY && p.st !== ST.ONROPE && p.st !== ST.HIT && p.st !== ST.DOWN && p.st !== ST.KO && p.st !== ST.PUNCH && p.st !== ST.SUPLEX_A && p.st !== ST.SUPLEX_R);
+    const canAct = [1,2,3,12,14,15,16].includes(p.st); // [ST.IDLE, ST.WALK, ST.RUN, ST.WIN, ST.BULL_CHARGE, ST.BULL_BOUNCE, ST.BULL_REBOUND]
 
     if (p.at <= 0) {
       p.at = RndF(0.2, 0.6);
@@ -2067,7 +2106,7 @@ class PlayScene extends Phaser.Scene {
         const distL = Math.abs(p.sx - bounds.left);
         const distR = Math.abs(p.sx - bounds.right);
 
-        if (Math.min(distL, distR) < 200) {
+        if (d < 250 && Math.min(distL, distR) < 200) {
           p.as = 'rope_bounce';
           p.at = 1.5;
         } else if (d < 150) {
@@ -2196,7 +2235,7 @@ class PlayScene extends Phaser.Scene {
         break;
 
       case 'capitalize':
-        if (opp.st !== ST.DOWN && opp.st !== ST.HIT) {
+        if (![6,7].includes(opp.st)) { // ![ST.HIT, ST.DOWN]
           p.as = 'approach';
         } else if (d > P.size * 1.1) {
           const ang = Math.atan2(dy, dx);
@@ -2219,7 +2258,7 @@ class PlayScene extends Phaser.Scene {
 
 
       case 'rope_bounce':
-        if (p.st !== ST.JUMP && p.st !== ST.FLY && p.st !== ST.ONROPE) {
+        if (![4,9,13].includes(p.st)) { // ![ST.JUMP, ST.FLY, ST.ONROPE]
           const bounds = s.getRingBounds(p.sy);
           const distL = Math.abs(p.sx - bounds.left);
           const distR = Math.abs(p.sx - bounds.right);
@@ -2227,7 +2266,7 @@ class PlayScene extends Phaser.Scene {
           inputs.left = distL < distR;
           inputs.right = distR <= distL;
 
-          if (Math.min(distL, distR) < 120) {
+          if (Math.min(distL, distR) < 80) {
             inputs.btn3 = true; // Jump!
             p.ajo = (Math.random() - 0.5) * 250;
             p.as = 'in_air'; p.at = 1.5;
@@ -2236,7 +2275,7 @@ class PlayScene extends Phaser.Scene {
         break;
 
       case 'bull_charge':
-        if (p.st !== ST.BULL_CHARGE && p.st !== ST.BULL_BOUNCE && p.st !== ST.BULL_REBOUND) {
+        if (![14,15,16].includes(p.st)) { // ![ST.BULL_CHARGE, ST.BULL_BOUNCE, ST.BULL_REBOUND]
           inputs.btn2 = true;
           inputs.left = dx < 0; inputs.right = dx > 0;
           p.as = 'wait'; p.at = 1.0;
@@ -2405,50 +2444,42 @@ class PlayScene extends Phaser.Scene {
       return;
     }
 
-    if (this.p1.hp <= 0 && this.p1.st !== ST.KO) {
-      this.p1.st = ST.KO; this.p1.body.setAngle(90); snd('bell');
-    }
-    if (this.p2.hp <= 0 && this.p2.st !== ST.KO) {
-      this.p2.st = ST.KO; this.p2.body.setAngle(90); snd('bell');
+    if (!this.me && (this.p1.hp <= 0 || this.p2.hp <= 0)) {
+      this.me = true; this.winPhase = 0; this.graceTimer = 1.5; snd('bell');
     }
 
-    if (this.p1.st === ST.KO || this.p2.st === ST.KO) {
-      const winner = this.p1.st === ST.KO ? 'p2' : this.p2.st === ST.KO ? 'p1' : 'draw';
+    if (this.me && this.winPhase === 0) {
+      this.graceTimer -= dt / 0.35;
+      if (this.graceTimer <= 0) {
+        const d1 = this.p1.hp <= 0, d2 = this.p2.hp <= 0;
+        if (d1) { this.p1.st = 8; this.p1.body.setAngle(90); }
+        if (d2) { this.p2.st = 8; this.p2.body.setAngle(90); }
 
-      this.me = true;
-      this.winPhase = 1;
-      this.graceTimer = 3.0;
-      this.lastWinner = winner;
+        const winner = d1 && d2 ? 'draw' : d1 ? 'p2' : 'p1';
+        this.winPhase = 1; this.graceTimer = 3.0; this.lastWinner = winner;
 
-      this.hud.winContainer.setVisible(true);
-      let titleTxt = ['GANADOR DE LA PRIMERA CAÍDA', 'GANADOR DE LA SEGUNDA CAÍDA', 'GANADOR DE LA TERCERA CAÍDA'][this.round - 1] || 'GANADOR';
-      const isMatchOver = (this.scores.p1 + (winner==='p1'?1:0) >= 2 || this.scores.p2 + (winner==='p2'?1:0) >= 2 || this.round >= 3);
-      if (isMatchOver) {
-        if (this.mode === '1p' && winner === 'p1') {
-          if (this.tournament < 3) titleTxt = '¡OPONENTE ' + (this.tournament + 1) + ' DERROTADO!';
-          else titleTxt = '¡CAMPEÓN DEL TORNEO!';
-        } else {
-          titleTxt = 'GANADOR DEL COMBATE';
+        this.hud.winContainer.setVisible(true);
+        let titleTxt = ['GANADOR DE LA PRIMERA CAÍDA', 'GANADOR DE LA SEGUNDA CAÍDA', 'GANADOR DE LA TERCERA CAÍDA'][this.round - 1] || 'GANADOR';
+        const isMatchOver = (this.scores.p1 + (winner === 'p1' ? 1 : 0) >= 2 || this.scores.p2 + (winner === 'p2' ? 1 : 0) >= 2 || this.round >= 3);
+        if (isMatchOver) {
+          if (this.mode === '1p' && winner === 'p1') {
+            titleTxt = this.tournament < 3 ? '¡OPONENTE ' + (this.tournament + 1) + ' DERROTADO!' : '¡CAMPEÓN DEL TORNEO!';
+          } else {
+            titleTxt = 'GANADOR DEL COMBATE';
+          }
         }
-      }
-      if (winner === 'draw') titleTxt = '¡EMPATE!';
-      this.hud.winTitle.setText(titleTxt);
+        if (winner === 'draw') titleTxt = '¡EMPATE!';
+        this.hud.winTitle.setText(titleTxt);
 
-      let winnerName = '';
-      if (winner === 'p1') winnerName = CH[this.registry.get('p1Char') || 0][0];
-      else if (winner === 'p2') winnerName = CH[this.registry.get('p2Char') || 1][0];
-      this.hud.winName.setText(winnerName);
-      if (winner === 'draw') this.hud.winName.setText('AMBOS KO');
+        this.hud.winName.setText(winner === 'draw' ? 'AMBOS KO' : CH[this.registry.get(winner + 'Char') || (winner === 'p1' ? 0 : 1)][0]);
 
-      if (winner !== 'draw') {
-        this.scores[winner]++;
-        this.registry.set('scores', this.scores);
-        const wp = winner === 'p1' ? this.p1 : this.p2;
-        wp.st = ST.WIN;
-        wp.jh = 0;
-        wp.vy = 0;
-        wp.sx = wp.x;
-        wp.sy = wp.y;
+        if (winner !== 'draw') {
+          this.scores[winner]++;
+          this.registry.set('scores', this.scores);
+          const wp = winner === 'p1' ? this.p1 : this.p2;
+          wp.st = 12; // ST.WIN
+          wp.jh = 0; wp.vy = 0; wp.sx = wp.x; wp.sy = wp.y;
+        }
       }
     }
   }
