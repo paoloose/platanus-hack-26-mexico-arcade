@@ -289,6 +289,11 @@ function damage(s, p, amt, kb) {
   if (p.invuln > 0) return;
   p.hp -= amt; if (p.hp < 0) p.hp = 0;
   p.vx += kb;
+  p.combo = 0; // Victim loses their combo progress
+  if (p.jh > 0) {
+    p.jh = 0;
+    p.y = p.sy; // Snap to ground if hit out of the air
+  }
   particles(s, p.x, p.y, 0xffffff, 4);
   if (amt >= 15) shake(s, amt / 2000, amt / 100);
 }
@@ -1071,6 +1076,21 @@ class PlayScene extends Phaser.Scene {
 
   }
 
+  /*
+   * MINIFIED PLAYER PROPERTIES GLOSSARY
+   * To keep file size <50KB, many player object properties are aliased:
+   * .hp = health              .f = facing                .st = state
+   * .sx = shadowX (ground X)  .sy = shadowY (ground Y)
+   * .svx = shadowVX           .svy = shadowVY
+   * .jh = jumpHeight          .ivy = initialVy
+   * .bd = bullDist            .bt = bullTimer          .hb = hasHitBull
+   * .rs = ropeHitSide         .ct = comboTimer         .dtm = downTimer
+   * .fd = isFlyingDrop        .ra = isRopeAttack       .spt = suplexTimer
+   * .jnr = jumpNearRope       .wt = walkTimer          .pt = punchTimer
+   * .as = aiState             .at = aiTimer            .ajo = aiJumpOffset
+   * .crj = canRopeJump
+   */
+
   createPlayer(num, charName, x, y, color) {
     const p = {
       num, charName, x, y, vx: 0, vy: 0, facing: num === 1 ? 1 : -1,
@@ -1782,6 +1802,7 @@ class PlayScene extends Phaser.Scene {
           const kb = isRebound ? P.tackleKb : P.punchKb * 0.5;
           
           damage(s, opp, dmg, p.f * kb);
+          p.combo = 0; // Attacker combo resets when landing a dash
           
           if (isRebound) {
             opp.st = ST.DOWN; 
