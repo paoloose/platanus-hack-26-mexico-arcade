@@ -260,10 +260,10 @@ const P = {
 };
 
 const ST = {
-  IDLE: 'idle', WALK: 'walk', RUN: 'run', JUMP: 'jump',
-  PUNCH: 'punch', HIT: 'hit', DOWN: 'down', KO: 'ko', FLY: 'fly',
-  SUPLEX_A: 'suplex_a', SUPLEX_R: 'suplex_r', WIN: 'win', ONROPE: 'onrope',
-  BULL_CHARGE: 'bull_charge', BULL_BOUNCE: 'bull_bounce', BULL_REBOUND: 'bull_rebound'
+  IDLE: 1, WALK: 2, RUN: 3, JUMP: 4,
+  PUNCH: 5, HIT: 6, DOWN: 7, KO: 8, FLY: 9,
+  SUPLEX_A: 10, SUPLEX_R: 11, WIN: 12, ONROPE: 13,
+  BULL_CHARGE: 14, BULL_BOUNCE: 15, BULL_REBOUND: 16
 };
 
 const AI = [
@@ -273,19 +273,21 @@ const AI = [
 ];
 
 // Helpers
+const Rnd = (a, b) => Phaser.Math.Between(a, b);
+const RndF = (a, b) => Phaser.Math.FloatBetween(a, b);
 function dist(a, b) { const dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
 function particles(s, x, y, color, count) {
   for (let i = 0; i < count; i++) {
     const p = s.add.rectangle(x, y, 4, 4, color, 1);
-    const ang = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const d = Phaser.Math.Between(10, 30);
+    const ang = RndF(0, Math.PI * 2);
+    const d = Rnd(10, 30);
     s.tweens.add({ targets: p, x: x + Math.cos(ang) * d, y: y + Math.sin(ang) * d, alpha: 0, duration: 200, onComplete: () => p.destroy() });
   }
 }
 function shake(s, intensity, duration) { s.cameras.main.shake(duration * 1000, intensity); }
 function damage(s, p, amt, kb) {
   if (p.invuln > 0) return;
-  p.health -= amt; if (p.health < 0) p.health = 0;
+  p.hp -= amt; if (p.hp < 0) p.hp = 0;
   p.vx += kb;
   particles(s, p.x, p.y, 0xffffff, 4);
   if (amt >= 15) shake(s, amt / 2000, amt / 100);
@@ -578,7 +580,7 @@ class CharSelectScene extends Phaser.Scene {
 
     this.mode = this.registry.get('mode') || '1p';
     this.charCount = CH.length; // Number of characters
-    this.transitioning = false;
+    this.tr = false;
 
     // Player selections
     this.sel = [
@@ -614,7 +616,7 @@ class CharSelectScene extends Phaser.Scene {
   }
 
   update(t) {
-    if (this.transitioning) return;
+    if (this.tr) return;
 
     updateSearchlights(this, t / 1000);
 
@@ -640,12 +642,12 @@ class CharSelectScene extends Phaser.Scene {
         callback: () => {
           ticks++;
           if (ticks <= 12) {
-            this.sel[1].cursor = Phaser.Math.Between(0, this.charCount - 1);
+            this.sel[1].cursor = Rnd(0, this.charCount - 1);
             snd('select');
           } else {
             const others = [];
             for (let i = 0; i < this.charCount; i++) if (i !== this.sel[0].cursor) others.push(i);
-            this.sel[1].cursor = others[Phaser.Math.Between(0, others.length - 1)];
+            this.sel[1].cursor = others[Rnd(0, others.length - 1)];
             this.sel[1].confirmed = true;
             snd('bell');
             this.time.delayedCall(1000, () => {
@@ -659,8 +661,8 @@ class CharSelectScene extends Phaser.Scene {
     }
 
     // Normal 2P start
-    if (this.mode === '2p' && p1Done && p2Done && !this.transitioning) {
-      this.transitioning = true;
+    if (this.mode === '2p' && p1Done && p2Done && !this.tr) {
+      this.tr = true;
       snd('bell');
       this.time.delayedCall(800, () => {
         this.registry.set('p1Char', this.sel[0].cursor);
@@ -920,10 +922,10 @@ class PlayScene extends Phaser.Scene {
 
     for (let r = 0; r < crowdRows; r++) {
       for (let c = 0; c < crowdCols; c++) {
-        const type = Phaser.Math.Between(0, 2);
+        const type = Rnd(0, 2);
         // Add slight random offset to break up the perfect grid
-        const ox = Phaser.Math.Between(-10, 10);
-        const oy = Phaser.Math.Between(-5, 5);
+        const ox = Rnd(-10, 10);
+        const oy = Rnd(-5, 5);
         const sp = this.add.image(startX + c * spacingX + ox, startY + r * spacingY + oy, 'crowd' + type);
         sp.setScale(3);
         sp.setDepth(sp.y - 500); // Behind the ring
@@ -955,8 +957,8 @@ class PlayScene extends Phaser.Scene {
     const G = this.ring.geometry;
 
     // Crowd animation (phase updated in update loop)
-    const isCheering = (this.p1.state === ST.DOWN || this.p1.state === ST.KO || 
-                        this.p2.state === ST.DOWN || this.p2.state === ST.KO || this.timer <= 0);
+    const isCheering = (this.p1.st === ST.DOWN || this.p1.st === ST.KO || 
+                        this.p2.st === ST.DOWN || this.p2.st === ST.KO || this.timer <= 0);
     const height = isCheering ? 8 : 3;
 
     for (const sp of this.ring.crowd) {
@@ -1133,7 +1135,7 @@ class PlayScene extends Phaser.Scene {
   resetRound() {
     const G = this.ring.geometry;
     
-    this.matchEnding = false;
+    this.me = false;
     this.winPhase = 0;
     this.graceTimer = 0;
     if (this.hud.winContainer) {
@@ -1143,19 +1145,19 @@ class PlayScene extends Phaser.Scene {
     }
 
     this.p1.x = G.backLX + 30; this.p1.y = G.backY + 30;
-    this.p1.vx = 0; this.p1.vy = 0; this.p1.state = ST.IDLE; this.p1.health = P.maxHealth;
-    this.p1.charge = 0; this.p1.charging = false; this.p1.combo = 0; this.p1.comboTimer = 0;
-    this.p1.downTimer = 0; this.p1.carry = null; this.p1.carriedBy = null;
+    this.p1.vx = 0; this.p1.vy = 0; this.p1.st = ST.IDLE; this.p1.hp = P.maxHealth;
+    this.p1.charge = 0; this.p1.charging = false; this.p1.combo = 0; this.p1.ct = 0;
+    this.p1.dtm = 0; this.p1.carry = null; this.p1.carriedBy = null;
     this.p1.hitTimer = 0; this.p1.invuln = 0;
-    this.p1.facing = 1;
+    this.p1.f = 1;
     this.p1.body.setAngle(0); this.p1.body.setAlpha(1);
 
     this.p2.x = G.frontRX - 120; this.p2.y = G.frontY - 120;
-    this.p2.vx = 0; this.p2.vy = 0; this.p2.state = ST.IDLE; this.p2.health = P.maxHealth;
-    this.p2.charge = 0; this.p2.charging = false; this.p2.combo = 0; this.p2.comboTimer = 0;
-    this.p2.downTimer = 0; this.p2.carry = null; this.p2.carriedBy = null;
+    this.p2.vx = 0; this.p2.vy = 0; this.p2.st = ST.IDLE; this.p2.hp = P.maxHealth;
+    this.p2.charge = 0; this.p2.charging = false; this.p2.combo = 0; this.p2.ct = 0;
+    this.p2.dtm = 0; this.p2.carry = null; this.p2.carriedBy = null;
     this.p2.hitTimer = 0; this.p2.invuln = 0;
-    this.p2.facing = -1;
+    this.p2.f = -1;
     this.p2.body.setAngle(0); this.p2.body.setAlpha(1);
 
     // Reset rope deformations
@@ -1171,7 +1173,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   showFightText() {
-    this.roundStarting = true;
+    this.rs = true;
     let step = 3;
     const txt = this.add.text(W / 2, H / 2, '3', t(64, '#ffffff', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
     
@@ -1185,7 +1187,7 @@ class PlayScene extends Phaser.Scene {
         this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800, onComplete: nextStep });
       } else if (step === 0) {
         txt.setText('¡A PELEAR!').setScale(1).setAlpha(1).setColor('#ff0000');
-        this.roundStarting = false;
+        this.rs = false;
         this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800, onComplete: nextStep });
         this.tweens.add({ targets: title, alpha: 0, duration: 800 });
       } else {
@@ -1199,54 +1201,54 @@ class PlayScene extends Phaser.Scene {
   updatePlayerVisuals(p) {
     // For carried players, position is based on carrier
     let drawX = p.x, drawY = p.y;
-    if (p.state === ST.CARRY && p.carriedBy) {
+    if (p.st === ST.CARRY && p.carriedBy) {
       drawX = p.carriedBy.x;
       drawY = p.carriedBy.y - P.size * 0.5;
     }
 
-    if (p.state === ST.HIT) {
+    if (p.st === ST.HIT) {
       drawX += (Math.random() - 0.5) * 10;
       drawY += (Math.random() - 0.5) * 10;
     }
 
-    if (p.state === ST.PUNCH) {
+    if (p.st === ST.PUNCH) {
       // Aggressive lunge: quick forward, short hold, quick back
-      const t = (p.punchTimer || 0) / 0.5;
+      const t = (p.pt || 0) / 0.5;
       let lungeAmt = 0;
       if (t < 0.1) lungeAmt = t / 0.1;
       else if (t < 0.4) lungeAmt = 1;
       else lungeAmt = Math.max(0, 1 - (t - 0.4) / 0.1);
       
-      drawX += lungeAmt * 15 * p.facing;
+      drawX += lungeAmt * 15 * p.f;
     }
 
     let isWalking = false;
-    if (p.state === ST.WALK || p.state === ST.BULL_CHARGE || p.state === ST.BULL_REBOUND || p.state === ST.BULL_BOUNCE) {
+    if (p.st === ST.WALK || p.st === ST.BULL_CHARGE || p.st === ST.BULL_REBOUND || p.st === ST.BULL_BOUNCE) {
       isWalking = true;
       let spdMod = 1;
-      if (p.state === ST.BULL_CHARGE) spdMod = 1.5;
-      if (p.state === ST.BULL_REBOUND) spdMod = 2.0;
-      if (p.state === ST.BULL_BOUNCE) spdMod = 1.0;
-      p.walkTimer = (p.walkTimer || 0) + (this.game.loop.delta / 1000) * spdMod;
-      drawY += Math.abs(Math.sin(p.walkTimer * 15)) * -6; // vertical bob
+      if (p.st === ST.BULL_CHARGE) spdMod = 1.5;
+      if (p.st === ST.BULL_REBOUND) spdMod = 2.0;
+      if (p.st === ST.BULL_BOUNCE) spdMod = 1.0;
+      p.wt = (p.wt || 0) + (this.game.loop.delta / 1000) * spdMod;
+      drawY += Math.abs(Math.sin(p.wt * 15)) * -6; // vertical bob
     } else {
-      p.walkTimer = 0;
+      p.wt = 0;
     }
 
     p.body.setPosition(drawX, drawY);
 
     // Determine sprite frame based on state
     let frame = 'Walk';
-    if (p.state === ST.JUMP || p.state === ST.FLY) frame = 'Jump';
-    if (p.state === ST.JUMP && p.jumpNearRope) frame = 'Walk';
-    else if (p.state === ST.WIN) frame = 'Walk';
-    else if (p.state === ST.PUNCH) {
-      const t = (p.punchTimer || 0) / 0.5;
+    if (p.st === ST.JUMP || p.st === ST.FLY) frame = 'Jump';
+    if (p.st === ST.JUMP && p.jnr) frame = 'Walk';
+    else if (p.st === ST.WIN) frame = 'Walk';
+    else if (p.st === ST.PUNCH) {
+      const t = (p.pt || 0) / 0.5;
       frame = t < 0.4 ? 'Punch' : 'Walk';
     }
-    else if (p.state === ST.DOWN || p.state === ST.KO) frame = 'Walk';
-    else if (p.state === ST.SUPLEX_A) frame = 'Walk';
-    else if (p.state === ST.SUPLEX_R) frame = 'Jump';
+    else if (p.st === ST.DOWN || p.st === ST.KO) frame = 'Walk';
+    else if (p.st === ST.SUPLEX_A) frame = 'Walk';
+    else if (p.st === ST.SUPLEX_R) frame = 'Jump';
 
     p.body.clear();
     if (p.sprites && p.sprites[frame] && p.sprites[frame].length > 0) {
@@ -1257,11 +1259,11 @@ class PlayScene extends Phaser.Scene {
       let alphaMultiplier = 1;
       
       // Damage blink
-      if (p.state === ST.HIT) {
+      if (p.st === ST.HIT) {
         alphaMultiplier = 0.7 + Math.sin(this.time.now * 0.02) * 0.3;
       }
       // KO grayed out
-      if (p.state === ST.KO) fillC = 0x888888;
+      if (p.st === ST.KO) fillC = 0x888888;
       
       p.body.fillStyle(fillC, 1 * alphaMultiplier);
       p.body.fillRect(-P.size / 2, -P.size / 2, P.size, P.size);
@@ -1269,7 +1271,7 @@ class PlayScene extends Phaser.Scene {
       p.body.strokeRect(-P.size / 2, -P.size / 2, P.size, P.size);
     }
 
-    const baseDepth = (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.ONROPE || p.state === ST.SUPLEX_A || p.state === ST.SUPLEX_R || p.state === ST.WIN) ? p.shadowY : p.y;
+    const baseDepth = (p.st === ST.JUMP || p.st === ST.FLY || p.st === ST.ONROPE || p.st === ST.SUPLEX_A || p.st === ST.SUPLEX_R || p.st === ST.WIN) ? p.sy : p.y;
     p.body.setDepth(baseDepth);
     p.shad.setDepth(baseDepth - 1);
     p.chargeBarBg.setDepth(baseDepth + 0.2);
@@ -1280,56 +1282,56 @@ class PlayScene extends Phaser.Scene {
     const cw = (p.charge / P.chargeTime) * P.size;
     p.chargeBar.setSize(cw, 4);
 
-    if (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.SUPLEX_A || p.state === ST.SUPLEX_R || p.state === ST.WIN) {
-      p.shad.setPosition(p.shadowX, p.shadowY);
+    if (p.st === ST.JUMP || p.st === ST.FLY || p.st === ST.SUPLEX_A || p.st === ST.SUPLEX_R || p.st === ST.WIN) {
+      p.shad.setPosition(p.sx, p.sy);
       p.shad.setVisible(true);
     } else { p.shad.setVisible(false); }
 
     // Face the correct direction. We scale by 4 here so 24x24 sprites appear larger (96x96)
-    p.body.setScale(p.facing * 4, 4);
+    p.body.setScale(p.f * 4, 4);
 
-    if (p.state === ST.DOWN || p.state === ST.KO) { p.body.setAngle(90); }
-    else if (p.state === ST.ONROPE) { p.body.setAngle(0); }
-    else if (p.state === ST.FLY && p.charName !== 2) {
-      p.body.setAngle(-90 * p.facing);
+    if (p.st === ST.DOWN || p.st === ST.KO) { p.body.setAngle(90); }
+    else if (p.st === ST.ONROPE) { p.body.setAngle(0); }
+    else if (p.st === ST.FLY && p.charName !== 2) {
+      p.body.setAngle(-90 * p.f);
     }
-    else if (p.state === ST.SUPLEX_A) {
-      p.body.setAngle(-90 * p.facing * Math.min(1, p.suplexTimer / 0.35));
+    else if (p.st === ST.SUPLEX_A) {
+      p.body.setAngle(-90 * p.f * Math.min(1, p.spt / 0.35));
     }
-    else if (p.state === ST.SUPLEX_R && p.carriedBy) {
-      p.body.setAngle(-180 * p.carriedBy.facing * Math.min(1, p.carriedBy.suplexTimer / 0.35));
+    else if (p.st === ST.SUPLEX_R && p.carriedBy) {
+      p.body.setAngle(-180 * p.carriedBy.f * Math.min(1, p.carriedBy.spt / 0.35));
     }
-    else if (p.state === ST.JUMP && p.charName === 1 && p.initialVy) {
-      const fraction = (p.vy - p.initialVy) / (-2 * p.initialVy);
+    else if (p.st === ST.JUMP && p.charName === 1 && p.ivy) {
+      const fraction = (p.vy - p.ivy) / (-2 * p.ivy);
       p.body.setAngle(fraction * -360);
     }
-    else if (p.state === ST.BULL_CHARGE || p.state === ST.BULL_REBOUND || p.state === ST.BULL_BOUNCE) {
-      p.body.setAngle((15 + Math.sin(p.walkTimer * 15) * 2) * p.facing);
+    else if (p.st === ST.BULL_CHARGE || p.st === ST.BULL_REBOUND || p.st === ST.BULL_BOUNCE) {
+      p.body.setAngle((15 + Math.sin(p.wt * 15) * 2) * p.f);
     }
-    else { p.body.setAngle(isWalking ? Math.sin(p.walkTimer * 15) * 2 * p.facing : 0); }
+    else { p.body.setAngle(isWalking ? Math.sin(p.wt * 15) * 2 * p.f : 0); }
 
     if (p.comboTxt) {
       p.comboTxt.setDepth(baseDepth + 0.4);
-      if (p.combo > 1 && !this.matchEnding) { p.comboTxt.setPosition(p.x, p.y - P.size / 2 - 50); p.comboTxt.setText('¡x' + p.combo + ' COMBO!'); p.comboTxt.setVisible(true); }
+      if (p.combo > 1 && !this.me) { p.comboTxt.setPosition(p.x, p.y - P.size / 2 - 50); p.comboTxt.setText('¡x' + p.combo + ' COMBO!'); p.comboTxt.setVisible(true); }
       else { p.comboTxt.setVisible(false); }
     }
 
-    if (p.charging && p.state !== ST.JUMP) { p.chargeBar.setVisible(true); p.chargeBarBg.setVisible(true); }
+    if (p.charging && p.st !== ST.JUMP) { p.chargeBar.setVisible(true); p.chargeBarBg.setVisible(true); }
     else { p.chargeBar.setVisible(false); p.chargeBarBg.setVisible(false); }
 
     // Debug: show current state
     if (p.debugState) {
       p.debugState.setDepth(baseDepth + 0.4);
       p.debugState.setPosition(p.x, p.y + P.size / 2 + 8);
-      p.debugState.setText(p.state.toUpperCase());
+      p.debugState.setText(p.st.toUpperCase());
     }
   }
 
   updateHUD() {
-    const w1 = (this.p1.health / P.maxHealth) * 200;
-    const w2 = (this.p2.health / P.maxHealth) * 200;
-    this.hud.hp1.setSize(w1, 20); this.hud.hp1.setFillStyle(this.p1.health > 30 ? C.bar : 0xff0000);
-    this.hud.hp2.setSize(w2, 20); this.hud.hp2.setFillStyle(this.p2.health > 30 ? C.bar : 0xff0000);
+    const w1 = (this.p1.hp / P.maxHealth) * 200;
+    const w2 = (this.p2.hp / P.maxHealth) * 200;
+    this.hud.hp1.setSize(w1, 20); this.hud.hp1.setFillStyle(this.p1.hp > 30 ? C.bar : 0xff0000);
+    this.hud.hp2.setSize(w2, 20); this.hud.hp2.setFillStyle(this.p2.hp > 30 ? C.bar : 0xff0000);
     
     // Scale the entire HUD container inversely to camera zoom so it stays perfectly pinned to the screen boundaries
     if (this.cameras.main.zoom) {
@@ -1350,8 +1352,8 @@ class PlayScene extends Phaser.Scene {
     // Springy rope physics - applies to both ground and air players
   applyRopeSpring(p, dt, isShadow) {
     const G = this.ring.geometry;
-    const px = isShadow ? p.shadowX : p.x;
-    const py = isShadow ? p.shadowY : p.y;
+    const px = isShadow ? p.sx : p.x;
+    const py = isShadow ? p.sy : p.y;
     const bounds = this.getRingBounds(py);
     // Perspective-compensated padding: player's visual "feet" are at their bottom edge,
     // so back/sides need tight or negative padding to look like they reach the edge.
@@ -1366,7 +1368,7 @@ class PlayScene extends Phaser.Scene {
 
     // Left rope
     if (px < minX + 5) {
-      const pushVel = Math.abs(isShadow ? (p.shadowVX || 0) : (p.vx || 0));
+      const pushVel = Math.abs(isShadow ? (p.svx || 0) : (p.vx || 0));
       const r = ropes.left;
       r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
       r.contactY = py;
@@ -1375,7 +1377,7 @@ class PlayScene extends Phaser.Scene {
       // Spring force pushes back (to the right)
       const springForce = r.amount * r.k * dt;
       if (isShadow) {
-        p.shadowX += springForce;
+        p.sx += springForce;
       } else {
         p.x += springForce;
       }
@@ -1385,7 +1387,7 @@ class PlayScene extends Phaser.Scene {
 
     // Right rope
     if (px > maxX - 5) {
-      const pushVel = Math.abs(isShadow ? (p.shadowVX || 0) : (p.vx || 0));
+      const pushVel = Math.abs(isShadow ? (p.svx || 0) : (p.vx || 0));
       const r = ropes.right;
       r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
       r.contactY = py;
@@ -1394,7 +1396,7 @@ class PlayScene extends Phaser.Scene {
       // Spring force pushes back (to the left)
       const springForce = r.amount * r.k * dt;
       if (isShadow) {
-        p.shadowX -= springForce;
+        p.sx -= springForce;
       } else {
         p.x -= springForce;
       }
@@ -1404,7 +1406,7 @@ class PlayScene extends Phaser.Scene {
 
     // Back rope
     if (py < minY + 5) {
-      const pushVel = Math.abs(isShadow ? (p.shadowVY || 0) : (p.vy || 0));
+      const pushVel = Math.abs(isShadow ? (p.svy || 0) : (p.vy || 0));
       const r = ropes.back;
       r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
       r.contactX = px;
@@ -1413,7 +1415,7 @@ class PlayScene extends Phaser.Scene {
       // Spring force pushes back (downward)
       const springForce = r.amount * r.k * dt;
       if (isShadow) {
-        p.shadowY += springForce;
+        p.sy += springForce;
       } else {
         p.y += springForce;
       }
@@ -1423,7 +1425,7 @@ class PlayScene extends Phaser.Scene {
 
     // Front rope
     if (py > maxY - 5) {
-      const pushVel = Math.abs(isShadow ? (p.shadowVY || 0) : (p.vy || 0));
+      const pushVel = Math.abs(isShadow ? (p.svy || 0) : (p.vy || 0));
       const r = ropes.front;
       r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
       r.contactX = px;
@@ -1432,7 +1434,7 @@ class PlayScene extends Phaser.Scene {
       // Spring force pushes back (upward)
       const springForce = r.amount * r.k * dt;
       if (isShadow) {
-        p.shadowY -= springForce;
+        p.sy -= springForce;
       } else {
         p.y -= springForce;
       }
@@ -1442,8 +1444,8 @@ class PlayScene extends Phaser.Scene {
 
     // Clamp position - allow pushing past bounds by rope bend amount
     if (isShadow) {
-      p.shadowX = Phaser.Math.Clamp(p.shadowX, minX - ropes.left.amount, maxX + ropes.right.amount);
-      p.shadowY = Phaser.Math.Clamp(p.shadowY, minY - ropes.back.amount, maxY + ropes.front.amount);
+      p.sx = Phaser.Math.Clamp(p.sx, minX - ropes.left.amount, maxX + ropes.right.amount);
+      p.sy = Phaser.Math.Clamp(p.sy, minY - ropes.back.amount, maxY + ropes.front.amount);
     } else {
       p.x = Phaser.Math.Clamp(p.x, minX - ropes.left.amount, maxX + ropes.right.amount);
       p.y = Phaser.Math.Clamp(p.y, minY - ropes.back.amount, maxY + ropes.front.amount);
@@ -1467,8 +1469,8 @@ class PlayScene extends Phaser.Scene {
   }
 
   updateCrowd() {
-    const isCheering = (this.p1.state === ST.DOWN || this.p1.state === ST.KO || 
-                        this.p2.state === ST.DOWN || this.p2.state === ST.KO);
+    const isCheering = (this.p1.st === ST.DOWN || this.p1.st === ST.KO || 
+                        this.p2.st === ST.DOWN || this.p2.st === ST.KO);
     const speed = isCheering ? 20 : 13;
     const dt = this.game.loop.delta / 1000;
     this.crowdPhase = (this.crowdPhase || 0) + (dt * speed);
@@ -1478,17 +1480,17 @@ class PlayScene extends Phaser.Scene {
   // inputs: { up, down, left, right, btn1, btn2, btn3, btn4 }
   applyPhysics(p, dt, inputs, opp) {
     const s = this;
-    if (p.state === ST.KO || p.state === ST.WIN || p.carriedBy) return;
+    if (p.st === ST.KO || p.st === ST.WIN || p.carriedBy) return;
 
     // Lift Cooldown
     if (p.liftCooldown > 0) p.liftCooldown -= dt;
 
     // Down state: countdown and recover
-    if (p.state === ST.DOWN) {
-      p.downTimer -= dt;
-      if (p.downTimer <= 0) {
-        p.state = ST.IDLE;
-        p.downTimer = 0;
+    if (p.st === ST.DOWN) {
+      p.dtm -= dt;
+      if (p.dtm <= 0) {
+        p.st = ST.IDLE;
+        p.dtm = 0;
         p.body.setAngle(0);
         if (p.bodyInner) p.bodyInner.setAngle(0);
       }
@@ -1499,23 +1501,23 @@ class PlayScene extends Phaser.Scene {
     }
 
     // Punch state: auto-reset after short duration. Stops player movement.
-    if (p.state === ST.PUNCH) {
+    if (p.st === ST.PUNCH) {
       p.vx = 0;
       p.vy = 0;
-      p.punchTimer = (p.punchTimer || 0) + dt;
-      if (p.punchTimer > 0.5) {
-        p.state = ST.IDLE;
-        p.punchTimer = 0;
+      p.pt = (p.pt || 0) + dt;
+      if (p.pt > 0.5) {
+        p.st = ST.IDLE;
+        p.pt = 0;
       }
     }
 
-    if (p.state === ST.SUPLEX_A) {
+    if (p.st === ST.SUPLEX_A) {
       p.vx = 0; p.vy = 0;
-      p.suplexTimer += dt;
+      p.spt += dt;
       const LIFT_TIME = 0.35;
-      const progress = p.suplexTimer / LIFT_TIME;
+      const progress = p.spt / LIFT_TIME;
 
-      if (p.suplexTimer <= LIFT_TIME && p.carry) {
+      if (p.spt <= LIFT_TIME && p.carry) {
         // Lift & slam
         const opp = p.carry;
         const radius = P.size * 0.8;
@@ -1524,223 +1526,223 @@ class PlayScene extends Phaser.Scene {
         const jumpOffset = Math.pow(progress, 4) * 20;
         
         // Pivot around the feet instead of the center
-        const theta = -Math.PI / 2 * p.facing * progress; // 0 to -90 degrees
+        const theta = -Math.PI / 2 * p.f * progress; // 0 to -90 degrees
         const feetR = P.size / 2;
-        p.x = p.shadowX + feetR * Math.sin(theta);
-        p.y = p.shadowY + feetR * (1 - Math.cos(theta)) - jumpOffset;
+        p.x = p.sx + feetR * Math.sin(theta);
+        p.y = p.sy + feetR * (1 - Math.cos(theta)) - jumpOffset;
         
         // Position the receiver on an arc closely coordinated with the attacker's body
         // Angle goes from PI/2 (front) -> 0 (top) -> -PI/2 (behind)
         const angleRads = (Math.PI / 2) - (progress * Math.PI);
-        opp.shadowX = p.shadowX + Math.sin(angleRads) * radius * p.facing;
-        opp.shadowY = p.shadowY; // Opponent lands at the same Y as attacker's base
+        opp.sx = p.sx + Math.sin(angleRads) * radius * p.f;
+        opp.sy = p.sy; // Opponent lands at the same Y as attacker's base
         
         // Receiver stays glued to the attacker's shifting center of mass
-        opp.x = p.x + Math.sin(angleRads) * radius * p.facing;
+        opp.x = p.x + Math.sin(angleRads) * radius * p.f;
         opp.y = p.y - Math.cos(angleRads) * radius;
 
-      } else if (p.suplexTimer > LIFT_TIME && p.suplexTimer < LIFT_TIME + 0.1 && p.carry) {
+      } else if (p.spt > LIFT_TIME && p.spt < LIFT_TIME + 0.1 && p.carry) {
         // Impact
         const opp = p.carry;
-        p.y = p.shadowY; // Snap to ground
-        opp.x = opp.shadowX;
-        opp.y = opp.shadowY; // Snap to ground
+        p.y = p.sy; // Snap to ground
+        opp.x = opp.sx;
+        opp.y = opp.sy; // Snap to ground
         
         damage(s, opp, 10, 0);
-        opp.state = ST.DOWN; 
-        opp.downTimer = 2.5; 
+        opp.st = ST.DOWN; 
+        opp.dtm = 2.5; 
         opp.liftCooldown = 1.5;
         opp.carriedBy = null;
         p.carry = null;
         snd('slam'); 
         particles(s, opp.x, opp.y, 0xffffff, 10);
         shake(s, 0.015, 0.15); // Extra impact
-      } else if (p.suplexTimer > LIFT_TIME + 0.5) {
+      } else if (p.spt > LIFT_TIME + 0.5) {
         // Recovery complete
-        p.state = ST.IDLE;
-        p.suplexTimer = 0;
+        p.st = ST.IDLE;
+        p.spt = 0;
       }
       return;
     }
 
-    if (p.state === ST.HIT) {
+    if (p.st === ST.HIT) {
       p.hitTimer -= dt;
-      if (p.hitTimer <= 0) p.state = ST.IDLE;
+      if (p.hitTimer <= 0) p.st = ST.IDLE;
       p.x += p.vx; p.vx *= 0.9;
       p.y += p.vy; p.vy *= 0.9;
       s.applyRopeSpring(p, dt, false);
       return;
     }
 
-    if (p.state === ST.ONROPE) {
-      p.jumpHeight = 90;
-      p.y = p.shadowY - p.jumpHeight;
-      p.x = p.shadowX;
+    if (p.st === ST.ONROPE) {
+      p.jh = 90;
+      p.y = p.sy - p.jh;
+      p.x = p.sx;
       
       if (!inputs.btn3) {
-        p.canRopeJump = true;
+        p.crj = true;
       }
       
-      if (inputs.btn3 && p.canRopeJump) {
-        p.state = ST.JUMP;
-        p.isFlyingDrop = true;
-        p.isRopeAttack = true;
-        p.jumpNearRope = false;
+      if (inputs.btn3 && p.crj) {
+        p.st = ST.JUMP;
+        p.fd = true;
+        p.ra = true;
+        p.jnr = false;
         
-        let dx = opp.shadowX - p.shadowX;
-        let dy = opp.shadowY - p.shadowY;
+        let dx = opp.sx - p.sx;
+        let dy = opp.sy - p.sy;
         let dist = Math.sqrt(dx*dx + dy*dy);
         
-        if (isNaN(dist) || dist === 0) { dx = p.facing; dy = 0; dist = 1; }
+        if (isNaN(dist) || dist === 0) { dx = p.f; dy = 0; dist = 1; }
         
         let targetDist = Math.min(dist + 20, 300); // Removed minimum 150 overshoot, just aim for their position + small body offset
         
         p.flyDirX = dx / dist;
         p.flyDirY = dy / dist;
-        if (isNaN(p.flyDirX)) p.flyDirX = p.facing;
+        if (isNaN(p.flyDirX)) p.flyDirX = p.f;
         if (isNaN(p.flyDirY)) p.flyDirY = 0;
 
         p.vy = -12; 
         const frames = 36; 
         let spd = targetDist / frames;
 
-        p.shadowVX = p.flyDirX * spd;
-        p.shadowVY = p.flyDirY * spd;
-        p.facing = p.flyDirX > 0 ? 1 : -1;
+        p.svx = p.flyDirX * spd;
+        p.svy = p.flyDirY * spd;
+        p.f = p.flyDirX > 0 ? 1 : -1;
         snd('jump');
       }
       return;
     }
 
-    if (p.state === ST.FLY) {
+    if (p.st === ST.FLY) {
       const flySpd = P.walkSpd * 2.5;
-      p.shadowVX = p.flyDirX * flySpd;
-      p.shadowVY = p.flyDirY * flySpd;
-      p.shadowX += p.shadowVX;
-      p.shadowY += p.shadowVY;
+      p.svx = p.flyDirX * flySpd;
+      p.svy = p.flyDirY * flySpd;
+      p.sx += p.svx;
+      p.sy += p.svy;
       p.flyDist -= flySpd;
 
       const G = s.ring.geometry;
-      const bounds = s.getRingBounds(p.shadowY);
+      const bounds = s.getRingBounds(p.sy);
       const minX = bounds.left + 5;
       const maxX = bounds.right - 5;
       const minY = G.backY - P.size / 3 + 5;
       const maxY = G.frontY - P.size / 2 - 5;
 
-      const shadowDist = Math.sqrt((p.shadowX - opp.x) ** 2 + (p.shadowY - opp.y) ** 2);
-      if (shadowDist < P.size * 1.5 && Math.abs(p.jumpHeight - P.size) < P.size) {
+      const shadowDist = Math.sqrt((p.sx - opp.x) ** 2 + (p.sy - opp.y) ** 2);
+      if (shadowDist < P.size * 1.5 && Math.abs(p.jh - P.size) < P.size) {
         p.flyDist = 0; // Drop straight down if passing over opponent
       }
 
-      if (p.flyDist <= 0 || p.shadowX <= minX || p.shadowX >= maxX || p.shadowY <= minY || p.shadowY >= maxY) {
-        p.state = ST.JUMP;
-        p.isFlyingDrop = true;
-        p.shadowVX = p.flyDirX * 4;
-        p.shadowVY = p.flyDirY * 4;
+      if (p.flyDist <= 0 || p.sx <= minX || p.sx >= maxX || p.sy <= minY || p.sy >= maxY) {
+        p.st = ST.JUMP;
+        p.fd = true;
+        p.svx = p.flyDirX * 4;
+        p.svy = p.flyDirY * 4;
         p.vy = 0; // Starts falling
       }
 
-      p.x = p.shadowX;
-      p.y = p.shadowY - p.jumpHeight;
+      p.x = p.sx;
+      p.y = p.sy - p.jh;
       return;
     }
 
-    if (p.state === ST.JUMP) {
+    if (p.st === ST.JUMP) {
       const airSpd = P.walkSpd * 0.1; // little mid-air control
       
-      if (p.shadowVX === undefined) p.shadowVX = 0;
-      if (p.shadowVY === undefined) p.shadowVY = 0;
+      if (p.svx === undefined) p.svx = 0;
+      if (p.svy === undefined) p.svy = 0;
 
-      if (!p.jumpNearRope && !p.isRopeAttack) {
-        if (inputs.left) p.shadowVX -= airSpd;
-        if (inputs.right) p.shadowVX += airSpd;
+      if (!p.jnr && !p.ra) {
+        if (inputs.left) p.svx -= airSpd;
+        if (inputs.right) p.svx += airSpd;
       }
 
-      p.shadowX += p.shadowVX;
-      p.shadowY += p.shadowVY;
+      p.sx += p.svx;
+      p.sy += p.svy;
 
       s.applyRopeSpring(p, dt, true);
 
       const G = s.ring.geometry;
-      const bounds = s.getRingBounds(p.shadowY);
+      const bounds = s.getRingBounds(p.sy);
       const minX = bounds.left + 5;
       const maxX = bounds.right - 5;
       const minY = G.backY - P.size / 3 + 5;
       const maxY = G.frontY - P.size / 2 - 5;
 
       let bounced = false;
-      if (!p.jumpNearRope) {
-        if (p.shadowX <= minX) { 
-          p.shadowX = minX; p.flyDirX = 1; p.flyDirY = 0; bounced = true; 
-          s.ring.ropes.left.amount = 25; s.ring.ropes.left.contactY = p.shadowY;
-        } else if (p.shadowX >= maxX) { 
-          p.shadowX = maxX; p.flyDirX = -1; p.flyDirY = 0; bounced = true; 
-          s.ring.ropes.right.amount = 25; s.ring.ropes.right.contactY = p.shadowY;
+      if (!p.jnr) {
+        if (p.sx <= minX) { 
+          p.sx = minX; p.flyDirX = 1; p.flyDirY = 0; bounced = true; 
+          s.ring.ropes.left.amount = 25; s.ring.ropes.left.contactY = p.sy;
+        } else if (p.sx >= maxX) { 
+          p.sx = maxX; p.flyDirX = -1; p.flyDirY = 0; bounced = true; 
+          s.ring.ropes.right.amount = 25; s.ring.ropes.right.contactY = p.sy;
         }
       }
-      if (p.shadowY <= minY) { p.shadowY = minY; }
-      else if (p.shadowY >= maxY) { p.shadowY = maxY; }
+      if (p.sy <= minY) { p.sy = minY; }
+      else if (p.sy >= maxY) { p.sy = maxY; }
 
       if (bounced) {
-        if (p.flyDirX !== 0 && p.jumpNearRope) {
-          p.shadowVX = 0;
-          p.facing = p.flyDirX;
-        } else if (!p.isRopeAttack) {
-          p.state = ST.FLY;
+        if (p.flyDirX !== 0 && p.jnr) {
+          p.svx = 0;
+          p.f = p.flyDirX;
+        } else if (!p.ra) {
+          p.st = ST.FLY;
           p.flyDist = 200;
-          if (p.flyDirX !== 0 && !p.jumpNearRope) p.facing = p.flyDirX;
+          if (p.flyDirX !== 0 && !p.jnr) p.f = p.flyDirX;
           snd('rope');
           return;
         }
       }
 
       p.vy += P.jumpGrav;
-      p.jumpHeight -= p.vy;
-      p.x = p.shadowX;
-      p.y = p.shadowY - p.jumpHeight;
+      p.jh -= p.vy;
+      p.x = p.sx;
+      p.y = p.sy - p.jh;
 
-      if (p.jumpNearRope && p.vy > 0 && p.jumpHeight <= 90) {
-         if (Math.abs(p.shadowX - (minX - 10)) < 25) {
-           p.shadowX = minX - 10;
-           p.state = ST.ONROPE;
-           p.facing = 1;
-         } else if (Math.abs(p.shadowX - (maxX + 10)) < 25) {
-           p.shadowX = maxX + 10;
-           p.state = ST.ONROPE;
-           p.facing = -1;
+      if (p.jnr && p.vy > 0 && p.jh <= 90) {
+         if (Math.abs(p.sx - (minX - 10)) < 25) {
+           p.sx = minX - 10;
+           p.st = ST.ONROPE;
+           p.f = 1;
+         } else if (Math.abs(p.sx - (maxX + 10)) < 25) {
+           p.sx = maxX + 10;
+           p.st = ST.ONROPE;
+           p.f = -1;
          }
          
-         if (p.state === ST.ONROPE) {
-           p.jumpHeight = 90;
+         if (p.st === ST.ONROPE) {
+           p.jh = 90;
            p.vy = 0;
-           p.y = p.shadowY - p.jumpHeight;
-           p.canRopeJump = false;
+           p.y = p.sy - p.jh;
+           p.crj = false;
            snd('rope');
            return;
          }
       }
 
-      if (p.jumpHeight <= 0) {
-        p.jumpHeight = 0;
-        p.y = p.shadowY;
+      if (p.jh <= 0) {
+        p.jh = 0;
+        p.y = p.sy;
         p.vy = 0;
-        p.isFlyingDrop = false;
-        p.isRopeAttack = false;
-        p.state = ST.IDLE; 
+        p.fd = false;
+        p.ra = false;
+        p.st = ST.IDLE; 
         snd('slam'); 
         particles(s, p.x, p.y, 0xffffff, 6);
         shake(s, 0.005, 0.1);
       }
 
-      if ((inputs.btn1 || p.isFlyingDrop) && p.vy > 0 && p.jumpHeight < 50) {
-        const shadowDist = Math.sqrt((p.shadowX - opp.x) ** 2 + (p.shadowY - opp.y) ** 2);
+      if ((inputs.btn1 || p.fd) && p.vy > 0 && p.jh < 50) {
+        const shadowDist = Math.sqrt((p.sx - opp.x) ** 2 + (p.sy - opp.y) ** 2);
         if (shadowDist < P.size * 1.5) {
-          const dmg = p.isRopeAttack ? 15 : P.slamDmg;
-          const kb = p.isRopeAttack ? P.tackleKb * 1.5 : P.tackleKb;
-          damage(s, opp, dmg, p.facing * kb);
-          opp.state = ST.DOWN; opp.downTimer = P.downTime / 1000;
-          p.isFlyingDrop = false;
-          p.isRopeAttack = false;
+          const dmg = p.ra ? 15 : P.slamDmg;
+          const kb = p.ra ? P.tackleKb * 1.5 : P.tackleKb;
+          damage(s, opp, dmg, p.f * kb);
+          opp.st = ST.DOWN; opp.dtm = P.downTime / 1000;
+          p.fd = false;
+          p.ra = false;
           shake(s, 0.012, 0.15);
           snd('slam'); particles(s, opp.x, opp.y, 0xffffff, 8);
         }
@@ -1748,63 +1750,63 @@ class PlayScene extends Phaser.Scene {
       return;
     }
 
-    if (p.state === ST.BULL_CHARGE || p.state === ST.BULL_REBOUND) {
-      const spd = p.state === ST.BULL_CHARGE ? P.walkSpd * 1.5 : P.walkSpd * 2.5;
-      p.vx = p.facing * spd;
+    if (p.st === ST.BULL_CHARGE || p.st === ST.BULL_REBOUND) {
+      const spd = p.st === ST.BULL_CHARGE ? P.walkSpd * 1.5 : P.walkSpd * 2.5;
+      p.vx = p.f * spd;
       p.vy = 0;
       p.x += p.vx;
-      p.bullDist += Math.abs(p.vx);
-      p.shadowX = p.x;
-      p.shadowY = p.y;
+      p.bd += Math.abs(p.vx);
+      p.sx = p.x;
+      p.sy = p.y;
       s.applyRopeSpring(p, dt, false);
 
-      if (!p.hasHitBull && opp.state !== ST.DOWN && opp.state !== ST.HIT && opp.state !== ST.KO && opp.state !== ST.SUPLEX_A && opp.state !== ST.SUPLEX_R) {
+      if (!p.hb && opp.st !== ST.DOWN && opp.st !== ST.HIT && opp.st !== ST.KO && opp.st !== ST.SUPLEX_A && opp.st !== ST.SUPLEX_R) {
         let isPunching = inputs.btn1;
         let hitboxRange = isPunching ? P.size * 1.8 : P.size * 1.0;
         
-        if (Math.abs(p.shadowX - opp.shadowX) < hitboxRange && Math.abs(p.shadowY - opp.y) < P.size * 1.0) {
-          if (opp.state === ST.BULL_CHARGE || opp.state === ST.BULL_REBOUND) {
+        if (Math.abs(p.sx - opp.sx) < hitboxRange && Math.abs(p.sy - opp.y) < P.size * 1.0) {
+          if (opp.st === ST.BULL_CHARGE || opp.st === ST.BULL_REBOUND) {
             // Dash Clash!
-            p.state = ST.IDLE;
-            opp.state = ST.IDLE;
-            p.hasHitBull = true;
-            opp.hasHitBull = true;
+            p.st = ST.IDLE;
+            opp.st = ST.IDLE;
+            p.hb = true;
+            opp.hb = true;
             snd('punch');
             particles(s, p.x + (opp.x - p.x)/2, p.y, 0xffffff, 15);
             shake(s, 0.02, 0.15);
             return;
           }
 
-          const isRebound = p.state === ST.BULL_REBOUND;
+          const isRebound = p.st === ST.BULL_REBOUND;
           const dmg = isRebound ? 20 : 2;
           const kb = isRebound ? P.tackleKb : P.punchKb * 0.5;
           
-          damage(s, opp, dmg, p.facing * kb);
+          damage(s, opp, dmg, p.f * kb);
           
           if (isRebound) {
-            opp.state = ST.DOWN; 
-            opp.downTimer = P.downTime / 1000;
+            opp.st = ST.DOWN; 
+            opp.dtm = P.downTime / 1000;
             snd('slam');
           } else {
-            opp.state = ST.HIT;
+            opp.st = ST.HIT;
             opp.hitTimer = 0.15;
             snd('punch');
           }
           
-          p.hasHitBull = true;
+          p.hb = true;
           
           particles(s, opp.x, opp.y, 0xffffff, isRebound ? 12 : 5);
           shake(s, isRebound ? 0.02 : 0.01, 0.15);
           
           if (isPunching) {
-             p.state = ST.PUNCH;
-             p.punchTimer = 0;
+             p.st = ST.PUNCH;
+             p.pt = 0;
              return;
           }
         } else if (isPunching) {
           // Whiffed the running punch, stopping the charge!
-          p.state = ST.PUNCH;
-          p.punchTimer = 0;
+          p.st = ST.PUNCH;
+          p.pt = 0;
           snd('punch');
           return;
         }
@@ -1815,43 +1817,43 @@ class PlayScene extends Phaser.Scene {
       const maxX = bounds.right - 5;
       
       let hitRope = false;
-      if (p.x <= minX && p.facing === -1) { hitRope = true; p.x = minX; }
-      else if (p.x >= maxX && p.facing === 1) { hitRope = true; p.x = maxX; }
+      if (p.x <= minX && p.f === -1) { hitRope = true; p.x = minX; }
+      else if (p.x >= maxX && p.f === 1) { hitRope = true; p.x = maxX; }
 
-      const maxDist = p.state === ST.BULL_CHARGE ? 300 : 450;
-      if (hitRope && p.state === ST.BULL_CHARGE) {
-        p.state = ST.BULL_BOUNCE;
-        p.bullTimer = 0.5;
-        p.facing *= -1; // Immediately point in the rebound direction
-        p.ropeHitSide = p.facing === 1 ? -1 : 1;
+      const maxDist = p.st === ST.BULL_CHARGE ? 300 : 450;
+      if (hitRope && p.st === ST.BULL_CHARGE) {
+        p.st = ST.BULL_BOUNCE;
+        p.bt = 0.5;
+        p.f *= -1; // Immediately point in the rebound direction
+        p.rs = p.f === 1 ? -1 : 1;
         snd('rope');
-      } else if (p.bullDist > maxDist || hitRope) {
-        p.state = ST.IDLE;
+      } else if (p.bd > maxDist || hitRope) {
+        p.st = ST.IDLE;
         if (hitRope) snd('rope');
       }
       return;
     }
 
-    if (p.state === ST.BULL_BOUNCE) {
+    if (p.st === ST.BULL_BOUNCE) {
       p.vx = 0; p.vy = 0;
-      p.bullTimer -= dt;
+      p.bt -= dt;
       
       const bounds = s.getRingBounds(p.y);
-      const bendAmt = Math.max(0, ((0.5 - p.bullTimer) / 0.5) * 35);
+      const bendAmt = Math.max(0, ((0.5 - p.bt) / 0.5) * 35);
       
-      if (p.ropeHitSide === -1) { 
+      if (p.rs === -1) { 
         s.ring.ropes.left.amount = bendAmt; s.ring.ropes.left.contactY = p.y; 
         p.x = bounds.left + 5 - bendAmt;
       } else { 
         s.ring.ropes.right.amount = bendAmt; s.ring.ropes.right.contactY = p.y; 
         p.x = bounds.right - 5 + bendAmt;
       }
-      p.shadowX = p.x;
+      p.sx = p.x;
       
-      if (p.bullTimer <= 0) {
-        p.state = ST.BULL_REBOUND;
-        p.bullDist = 0;
-        p.hasHitBull = false;
+      if (p.bt <= 0) {
+        p.st = ST.BULL_REBOUND;
+        p.bd = 0;
+        p.hb = false;
         snd('jump');
       }
       return;
@@ -1862,17 +1864,17 @@ class PlayScene extends Phaser.Scene {
     if (inputs.left) mx -= 1; if (inputs.right) mx += 1;
     if (mx !== 0 && my !== 0) { mx *= 0.707; my *= 0.707; }
 
-    if (p.state !== ST.PUNCH) {
+    if (p.st !== ST.PUNCH) {
       p.vx = mx * P.walkSpd; p.vy = my * P.walkSpd;
       p.x += p.vx; p.y += p.vy;
-      if (mx !== 0) p.facing = mx > 0 ? 1 : -1;
+      if (mx !== 0) p.f = mx > 0 ? 1 : -1;
     } else {
       p.vx = 0; p.vy = 0;
     }
     
-    if (!p.jumpHeight || p.jumpHeight <= 0) {
-      p.shadowX = p.x;
-      p.shadowY = p.y;
+    if (!p.jh || p.jh <= 0) {
+      p.sx = p.x;
+      p.sy = p.y;
     }
 
     if (inputs.btn3) {
@@ -1884,73 +1886,73 @@ class PlayScene extends Phaser.Scene {
       p.charging = false;
       const force = P.jumpForce + (p.charge / P.chargeTime) * (P.jumpMax - P.jumpForce);
       p.vy = -force;
-      p.initialVy = -force;
-      p.jumpHeight = force;
-      p.state = ST.JUMP;
-      p.shadowX = p.x;
-      p.shadowY = p.y;
-      p.shadowVX = p.facing * P.walkSpd;
-      p.shadowVY = 0;
-      p.isFlyingDrop = false;
-      const bounds = s.getRingBounds(p.shadowY);
-      p.jumpNearRope = false;
-      if (p.facing === -1 && Math.abs(p.shadowX - bounds.left) < 90) p.jumpNearRope = true;
-      if (p.facing === 1 && Math.abs(p.shadowX - bounds.right) < 90) p.jumpNearRope = true;
+      p.ivy = -force;
+      p.jh = force;
+      p.st = ST.JUMP;
+      p.sx = p.x;
+      p.sy = p.y;
+      p.svx = p.f * P.walkSpd;
+      p.svy = 0;
+      p.fd = false;
+      const bounds = s.getRingBounds(p.sy);
+      p.jnr = false;
+      if (p.f === -1 && Math.abs(p.sx - bounds.left) < 90) p.jnr = true;
+      if (p.f === 1 && Math.abs(p.sx - bounds.right) < 90) p.jnr = true;
       
-      if (p.jumpNearRope) {
-        const targetX = p.facing === -1 ? bounds.left - 5 : bounds.right + 5;
-        p.shadowVX = (targetX - p.shadowX) / 15;
+      if (p.jnr) {
+        const targetX = p.f === -1 ? bounds.left - 5 : bounds.right + 5;
+        p.svx = (targetX - p.sx) / 15;
         p.vy = -12;
-        p.initialVy = p.vy;
+        p.ivy = p.vy;
       }
       
       snd('jump');
     }
 
-    if (inputs.btn1 && (p.state === ST.IDLE || p.state === ST.WALK || p.state === ST.RUN)) {
+    if (inputs.btn1 && (p.st === ST.IDLE || p.st === ST.WALK || p.st === ST.RUN)) {
         // Always punch, even if no opponent is near
-        p.state = ST.PUNCH;
-        p.punchTimer = 0;
-        const isAntiAir = (opp.state === ST.JUMP || opp.state === ST.FLY || opp.state === ST.ONROPE);
+        p.st = ST.PUNCH;
+        p.pt = 0;
+        const isAntiAir = (opp.st === ST.JUMP || opp.st === ST.FLY || opp.st === ST.ONROPE);
         // Extend vertical hitbox for anti-airs so grounded punches reach up to hitting jumping/roping opponents
         const vertHitbox = isAntiAir ? P.size * 3.0 : P.size * 1.0;
-        if (Math.abs(p.shadowX - opp.shadowX) < P.size * 1.6 && Math.abs(p.shadowY - opp.y) < vertHitbox) {
-          if (p.facing === opp.facing && opp.state !== ST.DOWN && opp.state !== ST.HIT && !isAntiAir) {
+        if (Math.abs(p.sx - opp.sx) < P.size * 1.6 && Math.abs(p.sy - opp.y) < vertHitbox) {
+          if (p.f === opp.f && opp.st !== ST.DOWN && opp.st !== ST.HIT && !isAntiAir) {
             // SUPLEX! Punching from behind
-            p.state = ST.SUPLEX_A; p.suplexTimer = 0; p.carry = opp;
-            p.shadowY = p.y; p.shadowX = p.x;
-            opp.state = ST.SUPLEX_R; opp.carriedBy = p;
-            opp.shadowY = opp.y; opp.shadowX = opp.x;
+            p.st = ST.SUPLEX_A; p.spt = 0; p.carry = opp;
+            p.sy = p.y; p.sx = p.x;
+            opp.st = ST.SUPLEX_R; opp.carriedBy = p;
+            opp.sy = opp.y; opp.sx = opp.x;
             p.combo = 0; opp.combo = 0;
             snd('punch'); // Initial grab sound
           } else if (isAntiAir) {
             // Anti-air hit! Knock them out of the sky
-            damage(s, opp, 5, p.facing * P.punchKb * 2);
-            opp.state = ST.DOWN;
-            opp.downTimer = P.downTime / 1000;
-            opp.jumpHeight = 0;
-            opp.y = opp.shadowY;
+            damage(s, opp, 5, p.f * P.punchKb * 2);
+            opp.st = ST.DOWN;
+            opp.dtm = P.downTime / 1000;
+            opp.jh = 0;
+            opp.y = opp.sy;
             p.combo = 0;
             snd('slam'); 
             particles(s, opp.x, opp.y, 0xffffff, 10);
             shake(s, 0.015, 0.15); // Extra impact
-          } else if (opp.state === ST.BULL_REBOUND) {
+          } else if (opp.st === ST.BULL_REBOUND) {
             // Countered the full-velocity bull charge!
-            damage(s, opp, P.punchDmg, p.facing * P.punchKb * 2);
-            opp.state = ST.DOWN;
-            opp.downTimer = P.downTime / 1000;
+            damage(s, opp, P.punchDmg, p.f * P.punchKb * 2);
+            opp.st = ST.DOWN;
+            opp.dtm = P.downTime / 1000;
             p.combo = 0;
             snd('slam');
             particles(s, opp.x, opp.y, 0xffffff, 10);
             shake(s, 0.015, 0.15); // Extra impact
           } else {
-            damage(s, opp, P.punchDmg, p.facing * P.punchKb);
+            damage(s, opp, P.punchDmg, p.f * P.punchKb);
             
             // If they were down, popping them into HIT state stands them back up for the combo
-            opp.state = ST.HIT; opp.hitTimer = 0.15;
-            p.combo++; p.comboTimer = P.comboTime / 1000;
+            opp.st = ST.HIT; opp.hitTimer = 0.15;
+            p.combo++; p.ct = P.comboTime / 1000;
             if (p.combo >= P.comboCount) {
-              opp.state = ST.DOWN; opp.downTimer = P.downTime / 1000;
+              opp.st = ST.DOWN; opp.dtm = P.downTime / 1000;
               p.combo = 0; snd('slam');
             } else { snd('punch'); }
           }
@@ -1959,26 +1961,26 @@ class PlayScene extends Phaser.Scene {
           snd('punch');
         }
       }
-    if (inputs.btn2 && (p.state === ST.IDLE || p.state === ST.WALK || p.state === ST.RUN)) {
-      p.state = ST.BULL_CHARGE;
-      p.bullDist = 0;
-      p.hasHitBull = false;
-      if (inputs.left) p.facing = -1;
-      else if (inputs.right) p.facing = 1;
+    if (inputs.btn2 && (p.st === ST.IDLE || p.st === ST.WALK || p.st === ST.RUN)) {
+      p.st = ST.BULL_CHARGE;
+      p.bd = 0;
+      p.hb = false;
+      if (inputs.left) p.f = -1;
+      else if (inputs.right) p.f = 1;
       snd('jump');
       return;
     }
 
     if (p.invuln > 0) p.invuln -= dt;
 
-    if (p.state !== ST.JUMP && p.state !== ST.FLY && p.state !== ST.ONROPE && p.state !== ST.HIT && p.state !== ST.DOWN && p.state !== ST.KO && p.state !== ST.PUNCH && p.state !== ST.SUPLEX_A && p.state !== ST.SUPLEX_R && p.state !== ST.BULL_CHARGE && p.state !== ST.BULL_BOUNCE && p.state !== ST.BULL_REBOUND) {
-      if (p.vx !== 0 || p.vy !== 0) p.state = ST.WALK;
-      else p.state = ST.IDLE;
+    if (p.st !== ST.JUMP && p.st !== ST.FLY && p.st !== ST.ONROPE && p.st !== ST.HIT && p.st !== ST.DOWN && p.st !== ST.KO && p.st !== ST.PUNCH && p.st !== ST.SUPLEX_A && p.st !== ST.SUPLEX_R && p.st !== ST.BULL_CHARGE && p.st !== ST.BULL_BOUNCE && p.st !== ST.BULL_REBOUND) {
+      if (p.vx !== 0 || p.vy !== 0) p.st = ST.WALK;
+      else p.st = ST.IDLE;
     }
 
     s.applyRopeSpring(p, dt, false);
 
-    if (p.combo > 0) { p.comboTimer -= dt; if (p.comboTimer <= 0) p.combo = 0; }
+    if (p.combo > 0) { p.ct -= dt; if (p.ct <= 0) p.combo = 0; }
 
   }
 
@@ -2009,67 +2011,67 @@ class PlayScene extends Phaser.Scene {
     const inputs = { up: false, down: false, left: false, right: false, btn1: false, btn2: false, btn3: false, btn4: false };
 
     // State machine for AI behavior
-    if (!p.aiState) p.aiState = 'approach';
-    if (!p.aiTimer) p.aiTimer = 0;
-    p.aiTimer -= dt;
+    if (!p.as) p.as = 'approach';
+    if (!p.at) p.at = 0;
+    p.at -= dt;
 
     // If carrying opponent, throw immediately
-    if (p.state === ST.LIFT && p.carry) {
-      p.aiState = 'throw';
-      p.aiTimer = 0.3;
+    if (p.st === ST.LIFT && p.carry) {
+      p.as = 'throw';
+      p.at = 0.3;
     }
 
-    const oppInAir = (opp.state === ST.JUMP || opp.state === ST.FLY || opp.state === ST.ONROPE);
-    const canAct = (p.state !== ST.JUMP && p.state !== ST.FLY && p.state !== ST.ONROPE && p.state !== ST.HIT && p.state !== ST.DOWN && p.state !== ST.KO && p.state !== ST.PUNCH && p.state !== ST.SUPLEX_A && p.state !== ST.SUPLEX_R);
+    const oppInAir = (opp.st === ST.JUMP || opp.st === ST.FLY || opp.st === ST.ONROPE);
+    const canAct = (p.st !== ST.JUMP && p.st !== ST.FLY && p.st !== ST.ONROPE && p.st !== ST.HIT && p.st !== ST.DOWN && p.st !== ST.KO && p.st !== ST.PUNCH && p.st !== ST.SUPLEX_A && p.st !== ST.SUPLEX_R);
 
-    if (p.aiTimer <= 0) {
-      p.aiTimer = Phaser.Math.FloatBetween(0.2, 0.6);
+    if (p.at <= 0) {
+      p.at = RndF(0.2, 0.6);
 
-      const healthPct = p.health / P.maxHealth;
-      const oppHealthPct = opp.health / P.maxHealth;
+      const healthPct = p.hp / P.maxHealth;
+      const oppHealthPct = opp.hp / P.maxHealth;
 
       // Evade aerial attacks (simulating human reaction time)
       if (canAct && oppInAir && d < 250) {
         // AI has a chance to fail to react based on personality
         if (Math.random() < personality.jumpChance * 2) {
-          p.aiState = 'jump_attack';
+          p.as = 'jump_attack';
         } else if (Math.random() < 0.6) {
-          p.aiState = 'dodge_y';
-          p.aiTimer = 0.6; // Commit to the dodge
+          p.as = 'dodge_y';
+          p.at = 0.6; // Commit to the dodge
         } else {
-          p.aiState = 'wait'; // Failed to dodge
+          p.as = 'wait'; // Failed to dodge
         }
-      } else if (opp.state === ST.DOWN || opp.state === ST.HIT || opp.state === ST.PUNCH) {
-        p.aiState = 'capitalize';
-        p.aiTimer = 0.3;
+      } else if (opp.st === ST.DOWN || opp.st === ST.HIT || opp.st === ST.PUNCH) {
+        p.as = 'capitalize';
+        p.at = 0.3;
       } else if (healthPct < 0.3 && oppHealthPct > 0.5) {
         if (d < 100) {
-          p.aiState = Math.random() < 0.5 ? 'jump_attack' : 'wait';
+          p.as = Math.random() < 0.5 ? 'jump_attack' : 'wait';
         } else {
-          p.aiState = Math.random() < 0.6 ? 'retreat' : 'circle';
+          p.as = Math.random() < 0.6 ? 'retreat' : 'circle';
         }
       } else if (d < 80) {
         const r = Math.random();
-        if (r < personality.punchChance * 3) p.aiState = 'attack';
-        else if (r < personality.punchChance * 3 + personality.jumpChance * 2) p.aiState = 'jump_attack';
-        else p.aiState = 'circle';
+        if (r < personality.punchChance * 3) p.as = 'attack';
+        else if (r < personality.punchChance * 3 + personality.jumpChance * 2) p.as = 'jump_attack';
+        else p.as = 'circle';
       } else if (d < 200) {
         const r = Math.random();
-        if (r < personality.runChance) p.aiState = 'approach';
-        else if (r < personality.runChance + personality.jumpChance * 2) p.aiState = 'jump_attack';
-        else p.aiState = 'circle';
+        if (r < personality.runChance) p.as = 'approach';
+        else if (r < personality.runChance + personality.jumpChance * 2) p.as = 'jump_attack';
+        else p.as = 'circle';
       } else {
         const r = Math.random();
-        if (r < 0.15) p.aiState = 'bull_charge';
-        else if (r < 0.15 + personality.jumpChance * 2) p.aiState = 'rope_bounce';
-        else p.aiState = Math.random() < personality.runChance ? 'approach' : 'wait';
+        if (r < 0.15) p.as = 'bull_charge';
+        else if (r < 0.15 + personality.jumpChance * 2) p.as = 'rope_bounce';
+        else p.as = Math.random() < personality.runChance ? 'approach' : 'wait';
       }
 
-      if (personality === AI.mistico && Math.random() < 0.15) p.aiState = 'jump_attack';
+      if (personality === AI.mistico && Math.random() < 0.15) p.as = 'jump_attack';
     }
 
     // Execute AI strategy
-    switch (p.aiState) {
+    switch (p.as) {
       case 'approach':
         if (d > P.size * 1.1) {
           // Human-like Y-axis first alignment
@@ -2083,12 +2085,12 @@ class PlayScene extends Phaser.Scene {
             inputs.left = dx < 0; inputs.right = dx > 0;
           }
         } else {
-          p.aiState = 'attack'; p.aiTimer = 0.2;
+          p.as = 'attack'; p.at = 0.2;
         }
         break;
 
       case 'dodge_y':
-        if (!oppInAir) p.aiState = 'approach'; // Cancel dodge if they landed
+        if (!oppInAir) p.as = 'approach'; // Cancel dodge if they landed
         else {
           // Move away from opp's Y to sidestep
           inputs.up = dy > 0; 
@@ -2107,7 +2109,7 @@ class PlayScene extends Phaser.Scene {
           if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
         } else {
-          p.aiState = 'wait'; p.aiTimer = 1.0;
+          p.as = 'wait'; p.at = 1.0;
         }
         break;
 
@@ -2118,7 +2120,7 @@ class PlayScene extends Phaser.Scene {
           const my = Math.sin(ang) * P.walkSpd;
           if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
-          if (Math.random() < 0.02) p.aiState = 'circle_other';
+          if (Math.random() < 0.02) p.as = 'circle_other';
         }
         break;
 
@@ -2129,7 +2131,7 @@ class PlayScene extends Phaser.Scene {
           const my = Math.sin(ang) * P.walkSpd;
           if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
-          if (Math.random() < 0.02) p.aiState = 'circle';
+          if (Math.random() < 0.02) p.as = 'circle';
         }
         break;
 
@@ -2138,7 +2140,7 @@ class PlayScene extends Phaser.Scene {
           // Only punch if Y is properly aligned to avoid whiffing
           if (Math.abs(dy) < P.size * 0.4) {
             inputs.btn1 = true;
-            p.aiTimer = 0.15; // Mash fast for combo
+            p.at = 0.15; // Mash fast for combo
           } else {
             // Realign Y before punching
             inputs.up = dy < 0; inputs.down = dy > 0;
@@ -2147,13 +2149,13 @@ class PlayScene extends Phaser.Scene {
             }
           }
         } else {
-          p.aiState = 'approach';
+          p.as = 'approach';
         }
         break;
 
       case 'capitalize':
-        if (opp.state !== ST.DOWN && opp.state !== ST.HIT) {
-          p.aiState = 'approach';
+        if (opp.st !== ST.DOWN && opp.st !== ST.HIT) {
+          p.as = 'approach';
         } else if (d > P.size * 1.1) {
           const ang = Math.atan2(dy, dx);
           const spd = P.walkSpd;
@@ -2163,71 +2165,71 @@ class PlayScene extends Phaser.Scene {
           else { inputs.up = my < 0; inputs.down = my > 0; }
         } else {
           // Once close, decide to lift or combo
-          if (Math.random() < 0.4 && opp.state === ST.DOWN) {
+          if (Math.random() < 0.4 && opp.st === ST.DOWN) {
             inputs.btn1 = true;
           } else {
             inputs.btn1 = true;
           }
-          p.aiTimer = 0.2; // Keep applying input quickly
+          p.at = 0.2; // Keep applying input quickly
         }
         break;
 
 
 
       case 'rope_bounce':
-        if (p.state !== ST.JUMP && p.state !== ST.FLY && p.state !== ST.ONROPE) {
-          const bounds = s.getRingBounds(p.shadowY);
-          const distL = Math.abs(p.shadowX - bounds.left);
-          const distR = Math.abs(p.shadowX - bounds.right);
+        if (p.st !== ST.JUMP && p.st !== ST.FLY && p.st !== ST.ONROPE) {
+          const bounds = s.getRingBounds(p.sy);
+          const distL = Math.abs(p.sx - bounds.left);
+          const distR = Math.abs(p.sx - bounds.right);
           
           inputs.left = distL < distR;
           inputs.right = distR <= distL;
           
           if (Math.min(distL, distR) < 120) {
             inputs.btn3 = true; // Jump!
-            p.aiJumpOffset = (Math.random() - 0.5) * 250;
-            p.aiState = 'in_air'; p.aiTimer = 1.5;
+            p.ajo = (Math.random() - 0.5) * 250;
+            p.as = 'in_air'; p.at = 1.5;
           }
         }
         break;
 
       case 'bull_charge':
-        if (p.state !== ST.BULL_CHARGE && p.state !== ST.BULL_BOUNCE && p.state !== ST.BULL_REBOUND) {
+        if (p.st !== ST.BULL_CHARGE && p.st !== ST.BULL_BOUNCE && p.st !== ST.BULL_REBOUND) {
           inputs.btn2 = true;
           inputs.left = dx < 0; inputs.right = dx > 0;
-          p.aiState = 'wait'; p.aiTimer = 1.0;
+          p.as = 'wait'; p.at = 1.0;
         }
         break;
 
       case 'jump_attack':
-        if (p.state !== ST.JUMP) {
+        if (p.st !== ST.JUMP) {
           inputs.btn3 = true;
-          p.aiJumpOffset = (Math.random() - 0.5) * 250;
-          p.aiState = 'in_air'; p.aiTimer = 1.0;
+          p.ajo = (Math.random() - 0.5) * 250;
+          p.as = 'in_air'; p.at = 1.0;
         }
         break;
 
       case 'in_air':
-        if (p.state === ST.IDLE) {
-          p.aiState = 'approach'; // Landed
-        } else if (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.ONROPE) {
-          if (p.state === ST.ONROPE) {
+        if (p.st === ST.IDLE) {
+          p.as = 'approach'; // Landed
+        } else if (p.st === ST.JUMP || p.st === ST.FLY || p.st === ST.ONROPE) {
+          if (p.st === ST.ONROPE) {
             // Smart rope jump: hang for a brief moment to aim, then launch!
-            if (p.aiTimer > 0.15) p.aiTimer = 0.15;
-            inputs.btn3 = (p.aiTimer <= 0.05);
-          } else if (p.state === ST.JUMP) {
+            if (p.at > 0.15) p.at = 0.15;
+            inputs.btn3 = (p.at <= 0.05);
+          } else if (p.st === ST.JUMP) {
             // In the air, steer towards opponent with an offset so we don't always land perfectly on them
-            const targetX = opp.x + (p.aiJumpOffset || 0);
-            const tdx = targetX - p.shadowX;
+            const targetX = opp.x + (p.ajo || 0);
+            const tdx = targetX - p.sx;
             inputs.left = tdx < -10; inputs.right = tdx > 10;
           }
           
-          if (p.vy > 0 && p.jumpHeight < 60) {
-            const shadowDist = Math.sqrt((p.shadowX - opp.x) ** 2 + (p.shadowY - opp.y) ** 2);
+          if (p.vy > 0 && p.jh < 60) {
+            const shadowDist = Math.sqrt((p.sx - opp.x) ** 2 + (p.sy - opp.y) ** 2);
             // Only body slam if close, but sometimes randomly hold back
             if (shadowDist < P.size * 2 && Math.random() < 0.7) {
               inputs.btn1 = true;
-              p.aiState = 'retreat'; p.aiTimer = 1.0;
+              p.as = 'retreat'; p.at = 1.0;
             }
           }
         }
@@ -2249,7 +2251,7 @@ class PlayScene extends Phaser.Scene {
 
   update() {
     let dt = this.game.loop.delta / 1000;
-    if (this.matchEnding) dt *= 0.35;
+    if (this.me) dt *= 0.35;
 
     // Reset rope targets at start of frame so they can accumulate from all players
     for (const side in this.ring.ropes) {
@@ -2257,13 +2259,13 @@ class PlayScene extends Phaser.Scene {
     }
 
     // Pause
-    if (this.canPause && !this.matchEnding && (isPressed('START1') || isPressed('START2'))) {
+    if (this.canPause && !this.me && (isPressed('START1') || isPressed('START2'))) {
       this.scene.launch('PauseScene'); this.scene.pause();
       clearPressed(); return;
     }
 
     // Update players
-    if (!this.roundStarting) {
+    if (!this.rs) {
       this.updatePlayer(this.p1, dt, this.p2);
       if (this.mode === '1p') this.updateAI(this.p2, this.p1, dt);
       else this.updatePlayer(this.p2, dt, this.p1);
@@ -2284,7 +2286,7 @@ class PlayScene extends Phaser.Scene {
     let targetMidY = H / 2;
     let targetZoom = 1;
 
-    if (this.matchEnding) {
+    if (this.me) {
       targetMidX = (this.p1.x + this.p2.x) / 2;
       targetMidY = (this.p1.y + this.p2.y) / 2 - P.size;
       targetZoom = 1.4;
@@ -2295,7 +2297,7 @@ class PlayScene extends Phaser.Scene {
     let targetScrollX = targetMidX - W / 2;
     let targetScrollY = targetMidY - H / 2;
 
-    if (!this.matchEnding) {
+    if (!this.me) {
       const G = this.ring.geometry;
       const minScrollX = G.frontLX - 50;
       const maxScrollX = G.frontRX + 50 - W;
@@ -2310,7 +2312,7 @@ class PlayScene extends Phaser.Scene {
   }
 
   checkKO(dt) {
-    if (this.matchEnding) {
+    if (this.me) {
       if (this.winPhase === 1) {
         this.graceTimer -= dt / 0.35;
         if (this.graceTimer <= 0) {
@@ -2345,33 +2347,33 @@ class PlayScene extends Phaser.Scene {
       }
 
       const winnerP = this.lastWinner === 'p1' ? this.p1 : this.lastWinner === 'p2' ? this.p2 : null;
-      if (winnerP && winnerP.state === ST.WIN) {
-        if (winnerP.jumpHeight <= 0 && winnerP.vy >= 0) {
+      if (winnerP && winnerP.st === ST.WIN) {
+        if (winnerP.jh <= 0 && winnerP.vy >= 0) {
           winnerP.vy = -P.jumpForce;
           snd('jump');
         }
         winnerP.vy += P.jumpGrav * dt * 60;
-        winnerP.jumpHeight -= winnerP.vy * dt * 60;
-        if (winnerP.jumpHeight <= 0) {
-          winnerP.jumpHeight = 0;
+        winnerP.jh -= winnerP.vy * dt * 60;
+        if (winnerP.jh <= 0) {
+          winnerP.jh = 0;
           winnerP.vy = 0;
         }
-        winnerP.y = winnerP.shadowY - winnerP.jumpHeight;
+        winnerP.y = winnerP.sy - winnerP.jh;
       }
       return;
     }
 
-    if (this.p1.health <= 0 && this.p1.state !== ST.KO) {
-      this.p1.state = ST.KO; this.p1.body.setAngle(90); snd('bell');
+    if (this.p1.hp <= 0 && this.p1.st !== ST.KO) {
+      this.p1.st = ST.KO; this.p1.body.setAngle(90); snd('bell');
     }
-    if (this.p2.health <= 0 && this.p2.state !== ST.KO) {
-      this.p2.state = ST.KO; this.p2.body.setAngle(90); snd('bell');
+    if (this.p2.hp <= 0 && this.p2.st !== ST.KO) {
+      this.p2.st = ST.KO; this.p2.body.setAngle(90); snd('bell');
     }
 
-    if (this.p1.state === ST.KO || this.p2.state === ST.KO) {
-      const winner = this.p1.state === ST.KO ? 'p2' : this.p2.state === ST.KO ? 'p1' : 'draw';
+    if (this.p1.st === ST.KO || this.p2.st === ST.KO) {
+      const winner = this.p1.st === ST.KO ? 'p2' : this.p2.st === ST.KO ? 'p1' : 'draw';
 
-      this.matchEnding = true;
+      this.me = true;
       this.winPhase = 1;
       this.graceTimer = 3.0;
       this.lastWinner = winner;
@@ -2400,11 +2402,11 @@ class PlayScene extends Phaser.Scene {
         this.scores[winner]++;
         this.registry.set('scores', this.scores);
         const wp = winner === 'p1' ? this.p1 : this.p2;
-        wp.state = ST.WIN;
-        wp.jumpHeight = 0;
+        wp.st = ST.WIN;
+        wp.jh = 0;
         wp.vy = 0;
-        wp.shadowX = wp.x;
-        wp.shadowY = wp.y;
+        wp.sx = wp.x;
+        wp.sy = wp.y;
       }
     }
   }
