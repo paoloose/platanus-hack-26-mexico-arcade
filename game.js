@@ -5,7 +5,7 @@ const W = 800, H = 600, K = 'platanus-lucha-26';
 const t = (s, c, b) => ({ fontFamily: 'monospace', fontSize: s + 'px', color: c, fontStyle: b ? 'bold' : 'normal' });
 const C = {
   bg: 0x1a0a2e, crowd: 0x2d1b4e, apron: 0x4a0000, mat: 0x5664c7,
-  rope1: 0x9a4360, rope2: 0xccd0fc, rope3: 0x4C735D,
+  rope1: 0x9a4360, rope2: 0xccd0fc, rope3: 0x4A8764,
   p1: 0xff0000, p2: 0x0000ff, txt: 0xffffff, shadow: 0x000000,
   bar: 0x00ff00, timer: 0xffff00,
 };
@@ -256,13 +256,14 @@ const RING = { x: 100, y: 120, w: 600, h: 360, matH: 320, ropeY: 40, ropeH: 8, t
 const P = {
   size: 40, walkSpd: 3.5, jumpGrav: 0.8, jumpForce: 12, jumpMax: 20,
   chargeTime: 2000, punchDmg: 4, slamDmg: 8,
-  punchKb: 20, tackleKb: 40, comboTime: 2000, comboCount: 3, downTime: 2000, maxHealth: 100,
+  punchKb: 20, tackleKb: 40, comboTime: 2000, comboCount: 3, downTime: 2500, maxHealth: 100,
 };
 
 const ST = {
   IDLE: 'idle', WALK: 'walk', RUN: 'run', JUMP: 'jump',
   PUNCH: 'punch', HIT: 'hit', DOWN: 'down', KO: 'ko', FLY: 'fly',
-  SUPLEX_A: 'suplex_a', SUPLEX_R: 'suplex_r', WIN: 'win', ONROPE: 'onrope'
+  SUPLEX_A: 'suplex_a', SUPLEX_R: 'suplex_r', WIN: 'win', ONROPE: 'onrope',
+  BULL_CHARGE: 'bull_charge', BULL_BOUNCE: 'bull_bounce', BULL_REBOUND: 'bull_rebound'
 };
 
 const AI = [
@@ -846,6 +847,10 @@ class PlayScene extends Phaser.Scene {
     // Show FIGHT!
     this.showFightText();
     snd('bell');
+
+    // Prevent immediate pause from CharSelectScene button mashing
+    this.canPause = false;
+    this.time.delayedCall(500, () => { this.canPause = true; });
   }
 
   createRing() {
@@ -869,13 +874,18 @@ class PlayScene extends Phaser.Scene {
     G.centerX = (G.backLX + G.backRX + G.frontLX + G.frontRX) / 4;
     G.centerY = (G.backY + G.frontY) / 2;
 
-    // Center ring logo (Banana!)
-    this.add.text(G.centerX, G.centerY - 20, '🍌', { fontSize: '120px' })
+    // Center ring logo (Banana & Text)
+    this.add.text(G.centerX, G.centerY - 60, '🍌', { fontSize: '100px' })
       .setOrigin(0.5, 0.5)
       .setAlpha(0.15)
       .setScale(1.4, 0.5) // Perspective scaling to lay flat on the mat
-      .setAngle(-15)      // Slight tilted angle
       .setDepth(1);       // On top of mat (depth 0), below players (depth 180+)
+
+    this.add.text(G.centerX + 10, G.centerY + 5, ' ARENA\nPLATANUS', t(40, '#fff', 1))
+      .setOrigin(0.5, 0.5)
+      .setAlpha(0.2)
+      .setScale(1.4, 0.5)
+      .setDepth(1);
 
     // Rope levels: wide separation so lateral ropes are clearly distinct
     G.ropeLevels = [
@@ -1065,7 +1075,7 @@ class PlayScene extends Phaser.Scene {
       state: ST.IDLE, health: P.maxHealth, color,
       charge: 0, charging: false, combo: 0, comboTimer: 0,
       downTimer: 0, carry: null, carriedBy: null,
-      hitTimer: 0, invuln: 0,
+      hitTimer: 0, invuln: 0, bullDist: 0, bullTimer: 0,
       shadowX: x, shadowY: y, shadowVX: 0, shadowVY: 0,
       sprites: SPRITES[charName],
     };
@@ -1211,9 +1221,13 @@ class PlayScene extends Phaser.Scene {
     }
 
     let isWalking = false;
-    if (p.state === ST.WALK) {
+    if (p.state === ST.WALK || p.state === ST.BULL_CHARGE || p.state === ST.BULL_REBOUND || p.state === ST.BULL_BOUNCE) {
       isWalking = true;
-      p.walkTimer = (p.walkTimer || 0) + this.game.loop.delta / 1000;
+      let spdMod = 1;
+      if (p.state === ST.BULL_CHARGE) spdMod = 1.5;
+      if (p.state === ST.BULL_REBOUND) spdMod = 2.0;
+      if (p.state === ST.BULL_BOUNCE) spdMod = 1.0;
+      p.walkTimer = (p.walkTimer || 0) + (this.game.loop.delta / 1000) * spdMod;
       drawY += Math.abs(Math.sin(p.walkTimer * 15)) * -6; // vertical bob
     } else {
       p.walkTimer = 0;
@@ -1288,6 +1302,9 @@ class PlayScene extends Phaser.Scene {
     else if (p.state === ST.JUMP && p.charName === 1 && p.initialVy) {
       const fraction = (p.vy - p.initialVy) / (-2 * p.initialVy);
       p.body.setAngle(fraction * -360);
+    }
+    else if (p.state === ST.BULL_CHARGE || p.state === ST.BULL_REBOUND || p.state === ST.BULL_BOUNCE) {
+      p.body.setAngle((15 + Math.sin(p.walkTimer * 15) * 2) * p.facing);
     }
     else { p.body.setAngle(isWalking ? Math.sin(p.walkTimer * 15) * 2 * p.facing : 0); }
 
@@ -1531,7 +1548,7 @@ class PlayScene extends Phaser.Scene {
         
         damage(s, opp, 10, 0);
         opp.state = ST.DOWN; 
-        opp.downTimer = 2.0; 
+        opp.downTimer = 2.5; 
         opp.liftCooldown = 1.5;
         opp.carriedBy = null;
         p.carry = null;
@@ -1560,11 +1577,11 @@ class PlayScene extends Phaser.Scene {
       p.y = p.shadowY - p.jumpHeight;
       p.x = p.shadowX;
       
-      if (!inputs.btn2) {
+      if (!inputs.btn3) {
         p.canRopeJump = true;
       }
       
-      if (inputs.btn2 && p.canRopeJump) {
+      if (inputs.btn3 && p.canRopeJump) {
         p.state = ST.JUMP;
         p.isFlyingDrop = true;
         p.isRopeAttack = true;
@@ -1576,7 +1593,7 @@ class PlayScene extends Phaser.Scene {
         
         if (isNaN(dist) || dist === 0) { dx = p.facing; dy = 0; dist = 1; }
         
-        let targetDist = Math.min(Math.max(dist + 60, 150), 300);
+        let targetDist = Math.min(dist + 20, 300); // Removed minimum 150 overshoot, just aim for their position + small body offset
         
         p.flyDirX = dx / dist;
         p.flyDirY = dy / dist;
@@ -1731,6 +1748,115 @@ class PlayScene extends Phaser.Scene {
       return;
     }
 
+    if (p.state === ST.BULL_CHARGE || p.state === ST.BULL_REBOUND) {
+      const spd = p.state === ST.BULL_CHARGE ? P.walkSpd * 1.5 : P.walkSpd * 2.5;
+      p.vx = p.facing * spd;
+      p.vy = 0;
+      p.x += p.vx;
+      p.bullDist += Math.abs(p.vx);
+      p.shadowX = p.x;
+      p.shadowY = p.y;
+      s.applyRopeSpring(p, dt, false);
+
+      if (!p.hasHitBull && opp.state !== ST.DOWN && opp.state !== ST.HIT && opp.state !== ST.KO && opp.state !== ST.SUPLEX_A && opp.state !== ST.SUPLEX_R) {
+        let isPunching = inputs.btn1;
+        let hitboxRange = isPunching ? P.size * 1.8 : P.size * 1.0;
+        
+        if (Math.abs(p.shadowX - opp.shadowX) < hitboxRange && Math.abs(p.shadowY - opp.y) < P.size * 1.0) {
+          if (opp.state === ST.BULL_CHARGE || opp.state === ST.BULL_REBOUND) {
+            // Dash Clash!
+            p.state = ST.IDLE;
+            opp.state = ST.IDLE;
+            p.hasHitBull = true;
+            opp.hasHitBull = true;
+            snd('punch');
+            particles(s, p.x + (opp.x - p.x)/2, p.y, 0xffffff, 15);
+            shake(s, 0.02, 0.15);
+            return;
+          }
+
+          const isRebound = p.state === ST.BULL_REBOUND;
+          const dmg = isRebound ? 20 : 2;
+          const kb = isRebound ? P.tackleKb : P.punchKb * 0.5;
+          
+          damage(s, opp, dmg, p.facing * kb);
+          
+          if (isRebound) {
+            opp.state = ST.DOWN; 
+            opp.downTimer = P.downTime / 1000;
+            snd('slam');
+          } else {
+            opp.state = ST.HIT;
+            opp.hitTimer = 0.15;
+            snd('punch');
+          }
+          
+          p.hasHitBull = true;
+          
+          particles(s, opp.x, opp.y, 0xffffff, isRebound ? 12 : 5);
+          shake(s, isRebound ? 0.02 : 0.01, 0.15);
+          
+          if (isPunching) {
+             p.state = ST.PUNCH;
+             p.punchTimer = 0;
+             return;
+          }
+        } else if (isPunching) {
+          // Whiffed the running punch, stopping the charge!
+          p.state = ST.PUNCH;
+          p.punchTimer = 0;
+          snd('punch');
+          return;
+        }
+      }
+
+      const bounds = s.getRingBounds(p.y);
+      const minX = bounds.left + 5;
+      const maxX = bounds.right - 5;
+      
+      let hitRope = false;
+      if (p.x <= minX && p.facing === -1) { hitRope = true; p.x = minX; }
+      else if (p.x >= maxX && p.facing === 1) { hitRope = true; p.x = maxX; }
+
+      const maxDist = p.state === ST.BULL_CHARGE ? 300 : 450;
+      if (hitRope && p.state === ST.BULL_CHARGE) {
+        p.state = ST.BULL_BOUNCE;
+        p.bullTimer = 0.5;
+        p.facing *= -1; // Immediately point in the rebound direction
+        p.ropeHitSide = p.facing === 1 ? -1 : 1;
+        snd('rope');
+      } else if (p.bullDist > maxDist || hitRope) {
+        p.state = ST.IDLE;
+        if (hitRope) snd('rope');
+      }
+      return;
+    }
+
+    if (p.state === ST.BULL_BOUNCE) {
+      p.vx = 0; p.vy = 0;
+      p.bullTimer -= dt;
+      
+      const bounds = s.getRingBounds(p.y);
+      const bendAmt = Math.max(0, ((0.5 - p.bullTimer) / 0.5) * 35);
+      
+      if (p.ropeHitSide === -1) { 
+        s.ring.ropes.left.amount = bendAmt; s.ring.ropes.left.contactY = p.y; 
+        p.x = bounds.left + 5 - bendAmt;
+      } else { 
+        s.ring.ropes.right.amount = bendAmt; s.ring.ropes.right.contactY = p.y; 
+        p.x = bounds.right - 5 + bendAmt;
+      }
+      p.shadowX = p.x;
+      
+      if (p.bullTimer <= 0) {
+        p.state = ST.BULL_REBOUND;
+        p.bullDist = 0;
+        p.hasHitBull = false;
+        snd('jump');
+      }
+      return;
+    }
+
     let mx = 0, my = 0;
     if (inputs.up) my -= 1; if (inputs.down) my += 1;
     if (inputs.left) mx -= 1; if (inputs.right) mx += 1;
@@ -1749,12 +1875,12 @@ class PlayScene extends Phaser.Scene {
       p.shadowY = p.y;
     }
 
-    if (inputs.btn2) {
+    if (inputs.btn3) {
       if (!p.charging) { p.charging = true; p.charge = 0; }
       p.charge += dt * 1000;
       if (p.charge > P.chargeTime) p.charge = P.chargeTime;
     }
-    if (!inputs.btn2 && p.charging) {
+    if (!inputs.btn3 && p.charging) {
       p.charging = false;
       const force = P.jumpForce + (p.charge / P.chargeTime) * (P.jumpMax - P.jumpForce);
       p.vy = -force;
@@ -1808,6 +1934,15 @@ class PlayScene extends Phaser.Scene {
             snd('slam'); 
             particles(s, opp.x, opp.y, 0xffffff, 10);
             shake(s, 0.015, 0.15); // Extra impact
+          } else if (opp.state === ST.BULL_REBOUND) {
+            // Countered the full-velocity bull charge!
+            damage(s, opp, P.punchDmg, p.facing * P.punchKb * 2);
+            opp.state = ST.DOWN;
+            opp.downTimer = P.downTime / 1000;
+            p.combo = 0;
+            snd('slam');
+            particles(s, opp.x, opp.y, 0xffffff, 10);
+            shake(s, 0.015, 0.15); // Extra impact
           } else {
             damage(s, opp, P.punchDmg, p.facing * P.punchKb);
             
@@ -1824,9 +1959,19 @@ class PlayScene extends Phaser.Scene {
           snd('punch');
         }
       }
+    if (inputs.btn2 && (p.state === ST.IDLE || p.state === ST.WALK || p.state === ST.RUN)) {
+      p.state = ST.BULL_CHARGE;
+      p.bullDist = 0;
+      p.hasHitBull = false;
+      if (inputs.left) p.facing = -1;
+      else if (inputs.right) p.facing = 1;
+      snd('jump');
+      return;
+    }
+
     if (p.invuln > 0) p.invuln -= dt;
 
-    if (p.state !== ST.JUMP && p.state !== ST.FLY && p.state !== ST.ONROPE && p.state !== ST.HIT && p.state !== ST.DOWN && p.state !== ST.KO && p.state !== ST.PUNCH && p.state !== ST.SUPLEX_A && p.state !== ST.SUPLEX_R) {
+    if (p.state !== ST.JUMP && p.state !== ST.FLY && p.state !== ST.ONROPE && p.state !== ST.HIT && p.state !== ST.DOWN && p.state !== ST.KO && p.state !== ST.PUNCH && p.state !== ST.SUPLEX_A && p.state !== ST.SUPLEX_R && p.state !== ST.BULL_CHARGE && p.state !== ST.BULL_BOUNCE && p.state !== ST.BULL_REBOUND) {
       if (p.vx !== 0 || p.vy !== 0) p.state = ST.WALK;
       else p.state = ST.IDLE;
     }
@@ -1845,7 +1990,7 @@ class PlayScene extends Phaser.Scene {
       left: p.num === 1 ? isHeld('P1_L') : isHeld('P2_L'),
       right: p.num === 1 ? isHeld('P1_R') : isHeld('P2_R'),
       btn1: p.num === 1 ? isPressed('P1_1') : isPressed('P2_1'),
-      btn2: p.num === 1 ? isHeld('P1_2') : isHeld('P2_2'),
+      btn2: p.num === 1 ? isPressed('P1_2') : isPressed('P2_2'),
       btn3: p.num === 1 ? isHeld('P1_3') : isHeld('P2_3'),
       btn4: false,
     };
@@ -1915,7 +2060,8 @@ class PlayScene extends Phaser.Scene {
         else p.aiState = 'circle';
       } else {
         const r = Math.random();
-        if (r < personality.jumpChance * 2) p.aiState = 'rope_bounce';
+        if (r < 0.15) p.aiState = 'bull_charge';
+        else if (r < 0.15 + personality.jumpChance * 2) p.aiState = 'rope_bounce';
         else p.aiState = Math.random() < personality.runChance ? 'approach' : 'wait';
       }
 
@@ -2038,16 +2184,24 @@ class PlayScene extends Phaser.Scene {
           inputs.right = distR <= distL;
           
           if (Math.min(distL, distR) < 120) {
-            inputs.btn2 = true; // Jump!
+            inputs.btn3 = true; // Jump!
             p.aiJumpOffset = (Math.random() - 0.5) * 250;
             p.aiState = 'in_air'; p.aiTimer = 1.5;
           }
         }
         break;
 
+      case 'bull_charge':
+        if (p.state !== ST.BULL_CHARGE && p.state !== ST.BULL_BOUNCE && p.state !== ST.BULL_REBOUND) {
+          inputs.btn2 = true;
+          inputs.left = dx < 0; inputs.right = dx > 0;
+          p.aiState = 'wait'; p.aiTimer = 1.0;
+        }
+        break;
+
       case 'jump_attack':
         if (p.state !== ST.JUMP) {
-          inputs.btn2 = true;
+          inputs.btn3 = true;
           p.aiJumpOffset = (Math.random() - 0.5) * 250;
           p.aiState = 'in_air'; p.aiTimer = 1.0;
         }
@@ -2059,8 +2213,8 @@ class PlayScene extends Phaser.Scene {
         } else if (p.state === ST.JUMP || p.state === ST.FLY || p.state === ST.ONROPE) {
           if (p.state === ST.ONROPE) {
             // Smart rope jump: hang for a brief moment to aim, then launch!
-            if (p.aiTimer > 0.4) p.aiTimer = 0.4;
-            inputs.btn2 = (p.aiTimer <= 0.1);
+            if (p.aiTimer > 0.15) p.aiTimer = 0.15;
+            inputs.btn3 = (p.aiTimer <= 0.05);
           } else if (p.state === ST.JUMP) {
             // In the air, steer towards opponent with an offset so we don't always land perfectly on them
             const targetX = opp.x + (p.aiJumpOffset || 0);
@@ -2103,7 +2257,7 @@ class PlayScene extends Phaser.Scene {
     }
 
     // Pause
-    if (!this.matchEnding && (isPressed('START1') || isPressed('START2'))) {
+    if (this.canPause && !this.matchEnding && (isPressed('START1') || isPressed('START2'))) {
       this.scene.launch('PauseScene'); this.scene.pause();
       clearPressed(); return;
     }
