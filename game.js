@@ -2393,8 +2393,45 @@ class PlayScene extends Phaser.Scene {
   }
 
   checkKO(dt) {
+    if (!this.me && (this.p1.hp <= 0 || this.p2.hp <= 0)) {
+      this.me = true; this.winPhase = 0; this.graceTimer = 1.5; snd('bell');
+    }
+
     if (this.me) {
-      if (this.winPhase === 1) {
+      if (this.winPhase === 0) {
+        this.graceTimer -= dt / 0.35;
+        if (this.graceTimer <= 0) {
+          const d1 = this.p1.hp <= 0, d2 = this.p2.hp <= 0;
+          if (d1) { this.p1.st = 8; this.p1.body.setAngle(90); }
+          if (d2) { this.p2.st = 8; this.p2.body.setAngle(90); }
+
+          const winner = d1 && d2 ? 'draw' : d1 ? 'p2' : 'p1';
+          this.winPhase = 1; this.graceTimer = 3.0; this.lastWinner = winner;
+
+          this.hud.winContainer.setVisible(true);
+          let titleTxt = ['GANADOR DE LA PRIMERA CAÍDA', 'GANADOR DE LA SEGUNDA CAÍDA', 'GANADOR DE LA TERCERA CAÍDA'][this.round - 1] || 'GANADOR';
+          const isMatchOver = (this.scores.p1 + (winner === 'p1' ? 1 : 0) >= 2 || this.scores.p2 + (winner === 'p2' ? 1 : 0) >= 2 || this.round >= 3);
+          if (isMatchOver) {
+            if (this.mode === '1p' && winner === 'p1') {
+              titleTxt = this.tournament < 3 ? '¡OPONENTE ' + (this.tournament + 1) + ' DERROTADO!' : '¡CAMPEÓN DEL TORNEO!';
+            } else {
+              titleTxt = 'GANADOR DEL COMBATE';
+            }
+          }
+          if (winner === 'draw') titleTxt = '¡EMPATE!';
+          this.hud.winTitle.setText(titleTxt);
+
+          this.hud.winName.setText(winner === 'draw' ? 'AMBOS KO' : CH[this.registry.get(winner + 'Char') || (winner === 'p1' ? 0 : 1)][0]);
+
+          if (winner !== 'draw') {
+            this.scores[winner]++;
+            this.registry.set('scores', this.scores);
+            const wp = winner === 'p1' ? this.p1 : this.p2;
+            wp.st = 12; // ST.WIN
+            wp.jh = 0; wp.vy = 0; wp.sx = wp.x; wp.sy = wp.y;
+          }
+        }
+      } else if (this.winPhase === 1) {
         this.graceTimer -= dt / 0.35;
         if (this.graceTimer <= 0) {
           this.winPhase = 2;
@@ -2402,7 +2439,6 @@ class PlayScene extends Phaser.Scene {
           this.tweens.add({ targets: this.hud.winPrompt, alpha: 0, duration: 500, yoyo: true, repeat: -1 });
         }
       } else if (this.winPhase === 2) {
-        // Any key to continue
         if (isPressed('P1_1') || isPressed('P2_1') || isPressed('START1') || isPressed('START2') || isPressed('P1_U') || isPressed('P1_D') || isPressed('P1_L') || isPressed('P1_R')) {
           snd('select');
           const isMatchOver = (this.scores.p1 >= 2 || this.scores.p2 >= 2 || this.round >= 3);
@@ -2428,7 +2464,7 @@ class PlayScene extends Phaser.Scene {
       }
 
       const winnerP = this.lastWinner === 'p1' ? this.p1 : this.lastWinner === 'p2' ? this.p2 : null;
-      if (winnerP && winnerP.st === ST.WIN) {
+      if (winnerP && winnerP.st === 12) {
         if (winnerP.jh <= 0 && winnerP.vy >= 0) {
           winnerP.vy = -P.jumpForce;
           snd('jump');
@@ -2440,46 +2476,6 @@ class PlayScene extends Phaser.Scene {
           winnerP.vy = 0;
         }
         winnerP.y = winnerP.sy - winnerP.jh;
-      }
-      return;
-    }
-
-    if (!this.me && (this.p1.hp <= 0 || this.p2.hp <= 0)) {
-      this.me = true; this.winPhase = 0; this.graceTimer = 1.5; snd('bell');
-    }
-
-    if (this.me && this.winPhase === 0) {
-      this.graceTimer -= dt / 0.35;
-      if (this.graceTimer <= 0) {
-        const d1 = this.p1.hp <= 0, d2 = this.p2.hp <= 0;
-        if (d1) { this.p1.st = 8; this.p1.body.setAngle(90); }
-        if (d2) { this.p2.st = 8; this.p2.body.setAngle(90); }
-
-        const winner = d1 && d2 ? 'draw' : d1 ? 'p2' : 'p1';
-        this.winPhase = 1; this.graceTimer = 3.0; this.lastWinner = winner;
-
-        this.hud.winContainer.setVisible(true);
-        let titleTxt = ['GANADOR DE LA PRIMERA CAÍDA', 'GANADOR DE LA SEGUNDA CAÍDA', 'GANADOR DE LA TERCERA CAÍDA'][this.round - 1] || 'GANADOR';
-        const isMatchOver = (this.scores.p1 + (winner === 'p1' ? 1 : 0) >= 2 || this.scores.p2 + (winner === 'p2' ? 1 : 0) >= 2 || this.round >= 3);
-        if (isMatchOver) {
-          if (this.mode === '1p' && winner === 'p1') {
-            titleTxt = this.tournament < 3 ? '¡OPONENTE ' + (this.tournament + 1) + ' DERROTADO!' : '¡CAMPEÓN DEL TORNEO!';
-          } else {
-            titleTxt = 'GANADOR DEL COMBATE';
-          }
-        }
-        if (winner === 'draw') titleTxt = '¡EMPATE!';
-        this.hud.winTitle.setText(titleTxt);
-
-        this.hud.winName.setText(winner === 'draw' ? 'AMBOS KO' : CH[this.registry.get(winner + 'Char') || (winner === 'p1' ? 0 : 1)][0]);
-
-        if (winner !== 'draw') {
-          this.scores[winner]++;
-          this.registry.set('scores', this.scores);
-          const wp = winner === 'p1' ? this.p1 : this.p2;
-          wp.st = 12; // ST.WIN
-          wp.jh = 0; wp.vy = 0; wp.sx = wp.x; wp.sy = wp.y;
-        }
       }
     }
   }
@@ -2511,6 +2507,7 @@ const config = {
   height: H,
   parent: 'game-root',
   backgroundColor: '#1a0a2e',
+  fps: { target: 60, forceSetTimeOut: true },
   physics: {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false },
