@@ -223,13 +223,9 @@ function snd(type) {
 
 // Storage
 function getStorage() {
-  if (window.platanusArcadeStorage) return window.platanusArcadeStorage;
-  return {
-    async get(key) {
-      try { const raw = window.localStorage.getItem(key); return raw === null ? { found: false, value: null } : { found: true, value: JSON.parse(raw) }; }
-      catch { return { found: false, value: null }; }
-    },
-    async set(key, value) { window.localStorage.setItem(key, JSON.stringify(value)); },
+  return window.platanusArcadeStorage || {
+    async get(k) { try { let r = localStorage.getItem(k); return { found: r !== null, value: JSON.parse(r) }; } catch { return { found: false, value: null }; } },
+    async set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
   };
 }
 async function loadData(key) { return getStorage().get(key); }
@@ -259,7 +255,7 @@ const AI = [
 // Helpers
 const Rnd = (a, b) => Phaser.Math.Between(a, b);
 const RndF = (a, b) => Phaser.Math.FloatBetween(a, b);
-function dist(a, b) { const dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function particles(s, x, y, color, count) {
   for (let i = 0; i < count; i++) {
     const p = s.add.rectangle(x, y, 4, 4, color, 1);
@@ -1623,7 +1619,7 @@ class PlayScene extends Phaser.Scene {
 
         let dx = opp.sx - p.sx;
         let dy = opp.sy - p.sy;
-        let dist = Math.sqrt(dx*dx + dy*dy);
+        let dist = Math.hypot(dx, dy);
 
         if (isNaN(dist) || dist === 0) { dx = p.f; dy = 0; dist = 1; }
 
@@ -1661,7 +1657,7 @@ class PlayScene extends Phaser.Scene {
       const minY = G.backY - P.size / 3 + 5;
       const maxY = G.frontY - P.size / 2 - 5;
 
-      const shadowDist = Math.sqrt((p.sx - opp.x) ** 2 + (p.sy - opp.y) ** 2);
+      const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
       if (shadowDist < P.size * 1.5 && Math.abs(p.jh - P.size) < P.size) {
         p.flyDist = 0; // Drop straight down if passing over opponent
       }
@@ -1755,19 +1751,19 @@ class PlayScene extends Phaser.Scene {
       }
 
       if (p.jh <= 0) {
-        p.jh = 0;
-        p.y = p.sy;
-        p.vy = 0;
-        p.fd = false;
-        p.ra = false;
-        p.st = ST.IDLE;
-        snd('slam');
-        particles(s, p.x, p.y, 0xffffff, 6);
-        shake(s, 0.005, 0.1);
+        p.jh = p.vy = 0; p.y = p.sy;
+        if (!p.fd && !p.ra && Math.hypot(p.sx - opp.x, p.sy - opp.y) < P.size * 1.5 && ![6,7,8,10,11].includes(opp.st)) {
+          damage(s, opp, P.punchDmg * 2, p.f * P.punchKb);
+          opp.st = 6; opp.hitTimer = 0.2;
+          shake(s, 0.02, 0.2); snd('punch'); particles(s, opp.x, opp.y, 0xffffff, 10);
+        } else {
+          snd('slam'); particles(s, p.x, p.y, 0xffffff, 6); shake(s, 0.005, 0.1);
+        }
+        p.fd = p.ra = false; p.st = 1;
       }
 
       if ((inputs.btn1 || p.fd) && p.vy > 0 && p.jh < 50) {
-        const shadowDist = Math.sqrt((p.sx - opp.x) ** 2 + (p.sy - opp.y) ** 2);
+        const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
         if (shadowDist < P.size * 1.5) {
           const dmg = p.ra ? 15 : P.slamDmg;
           const kb = p.ra ? P.tackleKb * 1.5 : P.tackleKb;
@@ -2042,7 +2038,7 @@ class PlayScene extends Phaser.Scene {
     const personality = AI[p.charName] || AI[0];
 
     const dx = opp.x - p.x, dy = opp.y - p.y;
-    const d = Math.sqrt(dx * dx + dy * dy);
+    const d = Math.hypot(dx, dy);
 
     // AI generates virtual inputs
     const inputs = { up: false, down: false, left: false, right: false, btn1: false, btn2: false, btn3: false, btn4: false };
@@ -2288,7 +2284,7 @@ class PlayScene extends Phaser.Scene {
           }
 
           if (p.vy > 0 && p.jh < 60) {
-            const shadowDist = Math.sqrt((p.sx - opp.x) ** 2 + (p.sy - opp.y) ** 2);
+            const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
             // Only body slam if close, but sometimes randomly hold back
             if (shadowDist < P.size * 2 && Math.random() < 0.7) {
               inputs.btn1 = true;
