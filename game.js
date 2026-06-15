@@ -184,7 +184,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 function isHeld(code) { return held[code] === true; }
-function isPressed(code) {
+function isPress(code) {
   if (pressed[code]) { pressed[code] = false; return true; }
   return false;
 }
@@ -517,14 +517,14 @@ class MenuScene extends Phaser.Scene {
     // Animate searchlight beams
     updateSearchlights(this, this.time.now / 1000);
 
-    const axis = (isPressed('P1_D') || isPressed('P2_D') ? 1 : 0) - (isPressed('P1_U') || isPressed('P2_U') ? 1 : 0);
+    const axis = (isPress('P1_D') || isPress('P2_D') ? 1 : 0) - (isPress('P1_U') || isPress('P2_U') ? 1 : 0);
     if (axis !== 0) {
       this.cursor = Phaser.Math.Wrap(this.cursor + axis, 0, 2);
       this.updateMenu();
       snd('select');
     }
 
-    if (isPressed('P1_1') || isPressed('P2_1') || isPressed('START1') || isPressed('START2')) {
+    if (isPress('P1_1') || isPress('P2_1') || isPress('START1') || isPress('START2')) {
       snd('select');
       this.registry.set('mode', this.cursor ? '2p' : '1p');
       this.registry.set('round', 1);
@@ -648,18 +648,18 @@ class CharSelectScene extends Phaser.Scene {
     const cCol = s.cursor % cols;
     const cRow = Math.floor(s.cursor / cols);
 
-    if (isPressed(leftK)) {
+    if (isPress(leftK)) {
       s.cursor = (cCol > 0) ? s.cursor - 1 : s.cursor + (cols - 1);
       if (s.cursor >= this.charCount) s.cursor = this.charCount - 1;
       moved = true;
-    } else if (isPressed(rightK)) {
+    } else if (isPress(rightK)) {
       s.cursor = (cCol < cols - 1 && s.cursor + 1 < this.charCount) ? s.cursor + 1 : s.cursor - cCol;
       moved = true;
-    } else if (isPressed(upK)) {
+    } else if (isPress(upK)) {
       s.cursor = (cRow > 0) ? s.cursor - cols : s.cursor + (rows - 1) * cols;
       if (s.cursor >= this.charCount) s.cursor -= cols;
       moved = true;
-    } else if (isPressed(downK)) {
+    } else if (isPress(downK)) {
       s.cursor = (s.cursor + cols < this.charCount) ? s.cursor + cols : s.cursor % cols;
       moved = true;
     }
@@ -667,7 +667,7 @@ class CharSelectScene extends Phaser.Scene {
     if (moved) snd('select');
 
     // Confirm
-    if (isPressed(btnK) || (btnK2 && isPressed(btnK2))) {
+    if (isPress(btnK) || (btnK2 && isPress(btnK2))) {
       s.confirmed = true;
       snd('select');
     }
@@ -873,7 +873,7 @@ class PlayScene extends Phaser.Scene {
     G.centerY = (G.backY + G.frontY) / 2;
 
     // Center ring logo (Banana & Text)
-    this.add.text(G.centerX, G.centerY - 60, '🍌', { fontSize: '100px' })
+    this.add.text(G.centerX, G.centerY - 60, '🍌', { fontSize: '100px', padding: { x: 20, y: 20 } })
       .setOrigin(0.5, 0.5)
       .setAlpha(0.15)
       .setScale(1.4, 0.5) // Perspective scaling to lay flat on the mat
@@ -1428,11 +1428,11 @@ class PlayScene extends Phaser.Scene {
       r.pushVel = pushVel;
 
       // Spring force pushes back (to the right)
-      const springForce = r.amount * r.k * dt;
+      const springf = r.amount * r.k * dt;
       if (isShadow) {
-        p.sx += springForce;
+        p.sx += springf;
       } else {
-        p.x += springForce;
+        p.x += springf;
       }
 
       r.soundTimer -= dt;
@@ -1447,11 +1447,11 @@ class PlayScene extends Phaser.Scene {
       r.pushVel = pushVel;
 
       // Spring force pushes back (to the left)
-      const springForce = r.amount * r.k * dt;
+      const springf = r.amount * r.k * dt;
       if (isShadow) {
-        p.sx -= springForce;
+        p.sx -= springf;
       } else {
-        p.x -= springForce;
+        p.x -= springf;
       }
 
       r.soundTimer -= dt;
@@ -1466,11 +1466,11 @@ class PlayScene extends Phaser.Scene {
       r.pushVel = pushVel;
 
       // Spring force pushes back (downward)
-      const springForce = r.amount * r.k * dt;
+      const springf = r.amount * r.k * dt;
       if (isShadow) {
-        p.sy += springForce;
+        p.sy += springf;
       } else {
-        p.y += springForce;
+        p.y += springf;
       }
 
       r.soundTimer -= dt;
@@ -1485,11 +1485,11 @@ class PlayScene extends Phaser.Scene {
       r.pushVel = pushVel;
 
       // Spring force pushes back (upward)
-      const springForce = r.amount * r.k * dt;
+      const springf = r.amount * r.k * dt;
       if (isShadow) {
-        p.sy -= springForce;
+        p.sy -= springf;
       } else {
-        p.y -= springForce;
+        p.y -= springf;
       }
 
       r.soundTimer -= dt;
@@ -1522,9 +1522,9 @@ class PlayScene extends Phaser.Scene {
   }
 
   updateCrowd() {
-    const isCheering = (this.p1.st === ST.DOWN || this.p1.st === ST.KO ||
-                        this.p2.st === ST.DOWN || this.p2.st === ST.KO);
-    const speed = isCheering ? 20 : 13;
+    // is cheering? 20 : 13
+    const speed = (this.p1.st === ST.DOWN || this.p1.st === ST.KO ||
+      this.p2.st === ST.DOWN || this.p2.st === ST.KO) ? 20 : 13;
     const dt = this.game.loop.delta / 1000;
     this.crowdPhase = (this.crowdPhase || 0) + (dt * speed);
   }
@@ -2046,8 +2046,8 @@ class PlayScene extends Phaser.Scene {
       down: isHeld('P' + n + '_D'),
       left: isHeld('P' + n + '_L'),
       right: isHeld('P' + n + '_R'),
-      btn1: isPressed('P' + n + '_1'),
-      btn2: isPressed('P' + n + '_2'),
+      btn1: isPress('P' + n + '_1'),
+      btn2: isPress('P' + n + '_2'),
       btn3: isHeld('P' + n + '_3'),
       btn4: false
     };
@@ -2334,7 +2334,7 @@ class PlayScene extends Phaser.Scene {
 
   update() {
     if (this.tG) {
-      if (this.canPause && ['START1','START2'].some(isPressed)) {
+      if (this.canPause && ['START1','START2'].some(isPress)) {
         this.tG.destroy();
         this.tG = 0;
         this.showFightText();
@@ -2347,7 +2347,7 @@ class PlayScene extends Phaser.Scene {
           this.tBtns[i].fg.setScale(held ? 10 : 8);
           this.tBtns[i].bg.setScale(held ? 11 : 8.5);
           this.tBtns[i].bg.setVisible(held);
-          if (isPressed(k)) snd('punch');
+          if (isPress(k)) snd('punch');
         });
       }
       this.tStartText.setAlpha(0.65 + 0.4 * Math.sin(this.time.now / 300));
@@ -2372,7 +2372,7 @@ class PlayScene extends Phaser.Scene {
     }
 
     // Pause
-    if (this.canPause && !this.me && (isPressed('START1') || isPressed('START2'))) {
+    if (this.canPause && !this.me && (isPress('START1') || isPress('START2'))) {
       this.scene.launch('PauseScene'); this.scene.pause();
       clearPressed(); return;
     }
@@ -2476,7 +2476,7 @@ class PlayScene extends Phaser.Scene {
           this.tweens.add({ targets: this.hud.winPrompt, alpha: 0, duration: 500, yoyo: true, repeat: -1 });
         }
       } else if (this.winPhase === 2) {
-        if (isPressed('P1_1') || isPressed('P2_1') || isPressed('START1') || isPressed('START2') || isPressed('P1_U') || isPressed('P1_D') || isPressed('P1_L') || isPressed('P1_R')) {
+        if (isPress('P1_1') || isPress('P2_1') || isPress('START1') || isPress('START2') || isPress('P1_U') || isPress('P1_D') || isPress('P1_L') || isPress('P1_R')) {
           snd('select');
           const isMatchOver = (this.scores.p1 >= 2 || this.scores.p2 >= 2 || this.round >= 3);
           if (isMatchOver) {
@@ -2536,11 +2536,11 @@ class PauseScene extends Phaser.Scene {
   }
 
   update() {
-    if (isPressed('P1_U') || isPressed('P2_U') || isPressed('P1_D') || isPressed('P2_D')) {
+    if (isPress('P1_U') || isPress('P2_U') || isPress('P1_D') || isPress('P2_D')) {
       this.sel ^= 1; snd('select'); this.us();
     }
 
-    if (isPressed('START1') || isPressed('START2') || isPressed('P1_1') || isPressed('P2_1')) {
+    if (isPress('START1') || isPress('START2') || isPress('P1_1') || isPress('P2_1')) {
       snd('select');
       this.scene.stop();
       if (!this.sel) this.scene.resume('PlayScene');
