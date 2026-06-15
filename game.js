@@ -508,7 +508,7 @@ class MenuScene extends Phaser.Scene {
     drawCityBackground(this, true);
 
     // Titles
-    const title = this.add.text(W / 2, 100, 'LUCHADORES', t(48, '#f7bb1b', 1)).setOrigin(0.5).setDepth(10);
+    const title = this.add.text(W / 2, 100, 'LUCHADOR', t(48, '#f7bb1b', 1)).setOrigin(0.5).setDepth(10);
     this.add.text(W / 2, 150, 'Platanus Hack 26 - CDMX', t(18, '#ffffff')).setOrigin(0.5).setDepth(10);
     this.tweens.add({ targets: title, scale: 1.05, duration: 1000, yoyo: true, repeat: -1 });
 
