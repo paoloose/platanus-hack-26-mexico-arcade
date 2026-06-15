@@ -2,6 +2,10 @@
 // Scene-based architecture. Each game phase is a Phaser Scene.
 
 const W = 800, H = 600, K = 'platanus-lucha-26';
+const rand = () => Math.random();
+const abs = (n) => Math.abs(n);
+const sin = (n) => Math.sin(n);
+const cos = (n) => Math.cos(n);
 const t = (s, c, b) => ({ fontFamily: 'monospace', fontSize: s + 'px', color: c, fontStyle: b ? 'bold' : 'normal' });
 const C = {
   bg: 0x1a0a2e, crowd: 0x2d1b4e, apron: 0x4a0000, mat: 0x5664c7,
@@ -14,23 +18,24 @@ const C = {
 // CSEF SPRITE ENGINE
 // =============================================================================
 const P_PAL = [
-  0x000000, 0x24222a, 0x4e4b5b, 0x7b768e, 0xaba4c1, 0xd3cde7, 0xfefdfe, 0xffefa8,
-  0xe2b35a, 0x9f5611, 0x6e2100, 0x390800, 0x5e2e00, 0x915f01, 0xe6c429, 0xeceab7,
-  0xd2fe7d, 0xc1e12c, 0x989800, 0x5b4d00, 0x362400, 0x004d03, 0x0c6d00, 0x2b9200,
-  0x7ec43f, 0xb2da73, 0xc8feae, 0x83fe6b, 0xff6600, 0x00cb22, 0x006d45, 0x004d3d,
-  0x206100, 0x019000, 0x0bba3d, 0x2eda91, 0x4fffca, 0xd0fff6, 0xa9fbee, 0x01ffff,
-  0x08b8ea, 0x006092, 0x004373, 0x333d8d, 0x6dd0ff, 0xb6f3ff, 0xa4dbff, 0x687aff,
-  0x0147ff, 0x0017c5, 0x140c81, 0x4200a5, 0x8d00f9, 0xc84ff5, 0xea9bf3, 0xf8dcf7,
-  0xf49fb3, 0xf6629d, 0xff0092, 0xcc0095, 0xa30092, 0x920030, 0xc1003f, 0xff0000,
+  0x000000, 0, 0, 0x7b768e, 0xaba4c1, 0xd3cde7, 0xfefdfe, 0,
+  0, 0x9f5611, 0x6e2100, 0, 0, 0x915f01, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0x2b9200,
+  0x7ec43f, 0, 0, 0, 0xff6600, 0, 0, 0,
+  0, 0x019000, 0, 0, 0, 0, 0, 0,
+  0x08b8ea, 0x006092, 0x004373, 0x333d8d, 0, 0, 0, 0,
+  0, 0, 0x140c81, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
   0xf5765d, 0xd11717, 0xa41c1c, 0xab8169, 0x7c6822, 0xffc7ba, 0x254c93, 0xdeac92,
-  0x18171a, 0xf7bb1b, 0xBF7F1F
+  0, 0xf7bb1b, 0xBF921F
 ];
+
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%&*()_+-=[]{};:,/<?`"';
-const COLOR_MAP = {};
+const CLR = {};
 for (let i = 0; i < CHARS.length; i++) {
-  if (i < P_PAL.length) COLOR_MAP[CHARS[i]] = P_PAL[i];
+  if (i < P_PAL.length) CLR[CHARS[i]] = P_PAL[i];
 }
-COLOR_MAP['.'] = null; COLOR_MAP[' '] = null;
+CLR['.'] = null; CLR[' '] = null;
 
 function parseCSEF(s, w) {
   const r = [], p = [];
@@ -79,7 +84,7 @@ function dsp(gfx, sData, x, y, opt = {}) {
   if (opt.shadow) {
     for (let r = 0; r < h; r++) {
       for (let c = 0; c < sData[r].length; c++) {
-        const col = COLOR_MAP[sData[r][c]];
+        const col = CLR[sData[r][c]];
         if (col != null) {
           gfx.fillStyle(P_PAL[0], 0.3);
           gfx.fillRect(x - cx + c + 1 | 0, y - cy + r + 2 | 0, 1, 1);
@@ -90,7 +95,7 @@ function dsp(gfx, sData, x, y, opt = {}) {
 
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < sData[r].length; c++) {
-      const col = COLOR_MAP[sData[r][c]];
+      const col = CLR[sData[r][c]];
       if (col != null) {
         gfx.fillStyle(opt.white ? 0xBDBDBD : col, 1);
         gfx.fillRect(x - cx + c | 0, y - cy + r | 0, 1, 1);
@@ -134,12 +139,12 @@ const CH = [
 
 const ANGEL_SPRITE = sp('2.3<9.6.2.1<1.2<9.5.2.1<3?9.5.3.1<9.7.3.2<4.2?8.1?1?3.1<3.1?2<1?4.4?1<2?1.2<2.1?2<1?2.5?1<1.1<2?1.1<3.3<2.1?2<2}1.1.2<2?1}2<2.1<2.2?1<2}2.2.2<1?1}5<1.1}1?4<2.2.2<2?1}6<1}3<1?2.3.1<1?3}1<2?2<1}1<2?3.4.3?1}5?1}1<5.5.2?3}3<1}6.7.2}3<1}3<4.7.1}4<3.3<2.7.1<2}2<8.6.2}5<7.5.2}1?5<7.5.1}1?1}5<7.5.1?2}3<2}1<6.4.2?1}5<1}1<6.5.1?1}4<1?1<1}6.6.1}4<1?2}6.7.1?3<1?1<7.7.1?3<1.2<6.7.1?1<3K2<6.7.1K1<4K2<5.7.1{2K3{7.7.3{>^6.1K2{1,>^6.1K1{2,>^5.1K2{2,>^^5.1K1{3,>5.1K2{3,3{1K5.', 20);
 
-const CROWD_SPRITES = [
+const CROWD_SPR = [
   sp('4.1J4.3.3J3.2.1?1J1?1J1?2.1.7J1.2.5,2.2.1,1A1,1A1,2.2.5,2.3.1X1,1X3.1.7X1.9Y', 9),
   sp('~~2.5A2.1{1.5A1.1{1[1.5{1.1[1[1.1{1A1{1A1{1.1[1[1.5{1.1[1[2.1[1{1[2.1[9[^', 9),
   sp('~~2.5A2.1,1.4A1[1.1,1G1.1A3,1A1[1G1G1.2A1,2A1.1G1G1.1A3,1A1.1G2G1A1G1,1G1A2G2G1A3G1A2G9G', 9),
 ];
-const SPRITES = CH.map(c => {
+const SPR = CH.map(c => {
   const s = {};
   for (const [frame, data] of Object.entries(c[1])) {
     s[frame] = data ? sp(data, 24) : null;
@@ -236,7 +241,7 @@ const RING = { x: 100, y: 120, w: 600, h: 360, matH: 320, ropeY: 40, ropeH: 8, t
 const P = {
   size: 40, walkSpd: 3.5, jumpGrav: 0.8, jumpForce: 12, jumpMax: 20,
   chargeTime: 2000, punchDmg: 4, slamDmg: 8,
-  punchKb: 20, tackleKb: 40, comboTime: 2000, comboCount: 3, downTime: 2500, maxHealth: 100,
+  punchKb: 20, tackleKb: 40, comboTime: 2000, comboCount: 3, downTime: 2500, mHealth: 100,
 };
 
 const ST = {
@@ -247,9 +252,10 @@ const ST = {
 };
 
 const AI = [
-  { punchChance: 0.08, tackleChance: 0.05, jumpChance: 0.05, runChance: 0.3 },
-  { punchChance: 0.04, tackleChance: 0.02, jumpChance: 0.07, runChance: 0.1 },
-  { punchChance: 0.03, tackleChance: 0.02, jumpChance: 0.12, runChance: 0.2 },
+  // ch = chance
+  { punchCh: 0.08, jumpCh: 0.05, runCh: 0.3 },
+  { punchCh: 0.04, jumpCh: 0.07, runCh: 0.1 },
+  { punchCh: 0.03, jumpCh: 0.12, runCh: 0.2 },
 ];
 
 // Helpers
@@ -261,13 +267,14 @@ function particles(s, x, y, color, count) {
     const p = s.add.rectangle(x, y, 4, 4, color, 1);
     const ang = RndF(0, Math.PI * 2);
     const d = Rnd(10, 30);
-    s.tweens.add({ targets: p, x: x + Math.cos(ang) * d, y: y + Math.sin(ang) * d, alpha: 0, duration: 200, onComplete: () => p.destroy() });
+    s.tweens.add({ targets: p, x: x + cos(ang) * d, y: y + sin(ang) * d, alpha: 0, duration: 200, onComplete: () => p.destroy() });
   }
 }
 function shake(s, intensity, duration) { s.cameras.main.shake(duration * 1000, intensity); }
 function damage(s, p, amt, kb) {
   if (p.invuln > 0) return;
   p.hp -= amt; if (p.hp < 0) p.hp = 0;
+  p.shakeTimer = 0.2;
   p.vx += kb;
   p.combo = 0; // Victim loses their combo progress
   p.charge = 0; p.charging = false; // Reset jump charge
@@ -289,10 +296,10 @@ function drawCityBackground(scene, includeAngel = true) {
   // Stars
   const sg = scene.add.graphics();
   for (let i = 0; i < 60; i++) {
-    const sx = Math.random() * W, sy = Math.random() * H * 0.5;
-    const br = 0.3 + Math.random() * 0.7;
+    const sx = rand() * W, sy = rand() * H * 0.5;
+    const br = 0.3 + rand() * 0.7;
     sg.fillStyle(0xffffff, br);
-    sg.fillCircle(sx, sy, Math.random() < 0.2 ? 2 : 1);
+    sg.fillCircle(sx, sy, rand() < 0.2 ? 2 : 1);
   }
 
   // Moon
@@ -322,7 +329,7 @@ function drawCityBackground(scene, includeAngel = true) {
     gfx.fillRect(b.x, H - b.h, b.w, b.h);
     for (let wy = H - b.h + 12; wy < H - 15; wy += 18) {
       for (let wx = b.x + 8; wx < b.x + b.w - 8; wx += 14) {
-        const lit = Math.random() < 0.45;
+        const lit = rand() < 0.45;
         gfx.fillStyle(lit ? 0xffdd44 : 0x0a0818, lit ? 0.8 : 0.5);
         gfx.fillRect(wx, wy, 6, 8);
       }
@@ -381,10 +388,10 @@ function drawCityBackground(scene, includeAngel = true) {
   // Stars
   const sg = scene.add.graphics();
   for (let i = 0; i < 60; i++) {
-    const sx = Math.random() * W, sy = Math.random() * H * 0.5;
-    const br = 0.3 + Math.random() * 0.7;
+    const sx = rand() * W, sy = rand() * H * 0.5;
+    const br = 0.3 + rand() * 0.7;
     sg.fillStyle(0xffffff, br);
-    sg.fillCircle(sx, sy, Math.random() < 0.2 ? 2 : 1);
+    sg.fillCircle(sx, sy, rand() < 0.2 ? 2 : 1);
   }
 
   // Moon
@@ -415,7 +422,7 @@ function drawCityBackground(scene, includeAngel = true) {
     // Windows
     for (let wy = H - b.h + 12; wy < H - 15; wy += 18) {
       for (let wx = b.x + 8; wx < b.x + b.w - 8; wx += 14) {
-        const lit = Math.random() < 0.45;
+        const lit = rand() < 0.45;
         gfx.fillStyle(lit ? 0xffdd44 : 0x0a0818, lit ? 0.8 : 0.5);
         gfx.fillRect(wx, wy, 6, 8);
       }
@@ -464,17 +471,17 @@ function drawCityBackground(scene, includeAngel = true) {
   ];
 }
 
-function updateSearchlights(scene, t) {
+function updateLights(scene, t) {
   if (!scene.beamGfx) return;
   scene.beamGfx.clear();
   for (const b of scene.beams) {
-    const a = b[1] + Math.sin(t * b[2]) * 0.6;
+    const a = b[1] + sin(t * b[2]) * 0.6;
     const len = 1000;
     const spread = 0.1;
-    const x1 = b[0] + Math.cos(a - spread) * len;
-    const y1 = H - Math.sin(a - spread) * len;
-    const x2 = b[0] + Math.cos(a + spread) * len;
-    const y2 = H - Math.sin(a + spread) * len;
+    const x1 = b[0] + cos(a - spread) * len;
+    const y1 = H - sin(a - spread) * len;
+    const x2 = b[0] + cos(a + spread) * len;
+    const y2 = H - sin(a + spread) * len;
     scene.beamGfx.fillStyle(b[3], 0.15);
     scene.beamGfx.fillTriangle(b[0], H, x1, y1, x2, y2);
   }
@@ -491,7 +498,7 @@ class MenuScene extends Phaser.Scene {
 
     // Titles
     const title = this.add.text(W / 2, 100, 'LUCHADOR', t(48, '#f7bb1b', 1)).setOrigin(0.5).setDepth(10);
-    this.add.text(W / 2, 150, 'Platanus Hack 26 - CDMX', t(18, '#ffffff')).setOrigin(0.5).setDepth(10);
+    this.add.text(W / 2, 150, 'Platanus Hack 26 - CDMX', t(18, '#fff')).setOrigin(0.5).setDepth(10);
     this.tweens.add({ targets: title, scale: 1.05, duration: 1000, yoyo: true, repeat: -1 });
 
 
@@ -509,13 +516,13 @@ class MenuScene extends Phaser.Scene {
   updateMenu() {
     for (let i = 0; i < this.items.length; i++) {
       this.items[i].bg.setFillStyle(i === this.cursor ? 0xf7bb1b : 0x1a1e05);
-      this.items[i].txt.setColor(i === this.cursor ? '#000000' : '#ffffff');
+      this.items[i].txt.setColor(i === this.cursor ? '#000' : '#fff');
     }
   }
 
   update() {
     // Animate searchlight beams
-    updateSearchlights(this, this.time.now / 1000);
+    updateLights(this, this.time.now / 1000);
 
     const axis = (isPress('P1_D') || isPress('P2_D') ? 1 : 0) - (isPress('P1_U') || isPress('P2_U') ? 1 : 0);
     if (axis !== 0) {
@@ -549,8 +556,8 @@ class CharSelectScene extends Phaser.Scene {
 
     // Player selections
     this.sel = [
-      { cursor: 0, confirmed: false },
-      { cursor: this.charCount - 1, confirmed: false }
+      { cursor: 0, ok: false },
+      { cursor: this.charCount - 1, ok: false }
     ];
     this.go = () => {
       this.registry.set('p1Char', this.sel[0].cursor);
@@ -566,17 +573,17 @@ class CharSelectScene extends Phaser.Scene {
     let b = (x,y,s,c,z) => this.add.text(x,y,s,t(z,c,1)).setOrigin(.5).setDepth(10);
     this.p1Label = b(115, 120, 'P1', '#48f', 20);
     this.p2Label = b(W-115, 120, this.mode === '2p' ? 'P2' : 'CPU', '#f44', 20);
-    this.p1Name = b(115, 410, '', '#fff', 24);
-    this.p2Name = b(W-115, 410, '', '#fff', 24);
-    this.p1Ready = b(115, 440, ' LISTO ', '#000', 16).setBackgroundColor('#2dc243').setVisible(false);
-    this.p2Ready = b(W-115, 440, ' LISTO ', '#000', 16).setBackgroundColor('#2dc243').setVisible(false);
+    this.name1 = b(115, 410, '', '#fff', 24);
+    this.name2 = b(W-115, 410, '', '#fff', 24);
+    this.ready1 = b(115, 440, ' LISTO ', '#000', 16).setBackgroundColor('#2dc243').setVisible(false);
+    this.ready2 = b(W-115, 440, ' LISTO ', '#000', 16).setBackgroundColor('#2dc243').setVisible(false);
 
     b(400, 570, 'BTN1 O START: ELEGIR', '#6f7a4a', 12);
 
     // Generate preview textures for each character
     const tg = this.add.graphics();
     for (let i = 0; i < this.charCount; i++) {
-      const spr = SPRITES[i]?.Walk;
+      const spr = SPR[i]?.Walk;
       if (spr) {
         tg.clear();
         dsp(tg, spr, 12, 12);
@@ -589,19 +596,19 @@ class CharSelectScene extends Phaser.Scene {
   update(t) {
     if (this.tr) return;
 
-    updateSearchlights(this, t / 1000);
+    updateLights(this, t / 1000);
 
     // P1 input
-    this.handlePlayerInput(0, t, 'P1_U', 'P1_D', 'P1_L', 'P1_R', 'P1_1', 'START1');
+    this.handlePInput(0, t, 'P1_U', 'P1_D', 'P1_L', 'P1_R', 'P1_1', 'START1');
 
     // P2 input (only in 2p mode)
     if (this.mode === '2p') {
-      this.handlePlayerInput(1, t, 'P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'START2');
+      this.handlePInput(1, t, 'P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'START2');
     }
 
-    // Check if all confirmed
-    const p1Done = this.sel[0].confirmed;
-    const p2Done = this.sel[1].confirmed;
+    // Check if all ok
+    const p1Done = this.sel[0].ok;
+    const p2Done = this.sel[1].ok;
 
     // AI roulette logic in 1P mode
     if (this.mode === '1p' && p1Done && !p2Done && !this.aiPicking) {
@@ -619,7 +626,7 @@ class CharSelectScene extends Phaser.Scene {
             const others = [];
             for (let i = 0; i < this.charCount; i++) if (i !== this.sel[0].cursor) others.push(i);
             this.sel[1].cursor = others[Rnd(0, others.length - 1)];
-            this.sel[1].confirmed = true;
+            this.sel[1].ok = true;
             snd('bell');
             this.time.delayedCall(1000, this.go);
           }
@@ -638,9 +645,9 @@ class CharSelectScene extends Phaser.Scene {
     clearPressed();
   }
 
-  handlePlayerInput(pIdx, t, upK, downK, leftK, rightK, btnK, btnK2) {
+  handlePInput(pIdx, t, upK, downK, leftK, rightK, btnK, btnK2) {
     const s = this.sel[pIdx];
-    if (s.confirmed) return;
+    if (s.ok) return;
 
     let moved = false;
     const cols = Math.min(3, this.charCount);
@@ -668,7 +675,7 @@ class CharSelectScene extends Phaser.Scene {
 
     // Confirm
     if (isPress(btnK) || (btnK2 && isPress(btnK2))) {
-      s.confirmed = true;
+      s.ok = true;
       snd('select');
     }
   }
@@ -693,7 +700,7 @@ class CharSelectScene extends Phaser.Scene {
       const y = startY + row * (slotH + gap);
 
       const p1H = this.sel[0].cursor === i;
-      const p2H = this.sel[1].cursor === i && (this.mode === '2p' || this.aiPicking || this.sel[1].confirmed);
+      const p2H = this.sel[1].cursor === i && (this.mode === '2p' || this.aiPicking || this.sel[1].ok);
 
       // Slot background
       this.gridGfx.fillStyle(0x1a1a2e, 1);
@@ -717,7 +724,7 @@ class CharSelectScene extends Phaser.Scene {
       }
 
       // Draw character preview sprite in slot (scaled)
-      const spr = SPRITES[i]?.Walk;
+      const spr = SPR[i]?.Walk;
       if (spr) {
         const sc = 6;
         const sh = spr.length, sw = spr[0]?.length || 0;
@@ -728,7 +735,7 @@ class CharSelectScene extends Phaser.Scene {
             const px = sox + c * sc;
             const py = soy + r * sc;
             if (px >= x && px + sc <= x + slotW && py >= y && py + sc <= y + slotH) {
-              const col = COLOR_MAP[spr[r][c]];
+              const col = CLR[spr[r][c]];
               if (col != null) {
                 this.gridGfx.fillStyle(col, 1);
                 this.gridGfx.fillRect(px, py, sc, sc);
@@ -745,20 +752,20 @@ class CharSelectScene extends Phaser.Scene {
     // Update preview names
     const k1 = this.sel[0].cursor;
     const k2 = this.sel[1].cursor;
-    this.p1Name.setText(CH[k1][0]);
-    this.p2Name.setText((this.mode === '2p' || this.sel[1].confirmed) ? CH[k2][0] : '???');
-    this.p1Ready.setVisible(this.sel[0].confirmed);
-    this.p2Ready.setVisible(this.sel[1].confirmed);
+    this.name1.setText(CH[k1][0]);
+    this.name2.setText((this.mode === '2p' || this.sel[1].ok) ? CH[k2][0] : '???');
+    this.ready1.setVisible(this.sel[0].ok);
+    this.ready2.setVisible(this.sel[1].ok);
 
     // Draw large previews on sides
     this.drawPreview(0, 115, 270);
-    if (this.mode === '2p' || this.aiPicking || this.sel[1].confirmed) this.drawPreview(1, W - 115, 270);
+    if (this.mode === '2p' || this.aiPicking || this.sel[1].ok) this.drawPreview(1, W - 115, 270);
   }
 
   drawPreview(pIdx, cx, cy) {
     const g = this.pvwGfx[pIdx];
     const key = this.sel[pIdx].cursor;
-    const spr = SPRITES[key]?.Walk;
+    const spr = SPR[key]?.Walk;
     if (!spr) return;
 
     // Draw scaled sprite (each pixel = 6px)
@@ -768,7 +775,7 @@ class CharSelectScene extends Phaser.Scene {
     const isP2 = pIdx === 1;
     for (let r = 0; r < h; r++) {
       for (let c = 0; c < (spr[r]?.length || 0); c++) {
-        const col = COLOR_MAP[spr[r][c]];
+        const col = CLR[spr[r][c]];
         if (col != null) {
           g.fillStyle(col, 1);
           g.fillRect(ox + (isP2 ? w - 1 - c : c) * scale, oy + r * scale, scale, scale);
@@ -795,13 +802,14 @@ class PlayScene extends Phaser.Scene {
     this.p1 = this.createPlayer(1, p1Char, G.backLX + 30, G.backY + 30, C.p1);
     this.p2 = this.createPlayer(2, p2Char, G.frontRX - 120, G.frontY - 120, C.p2);
 
-    // Create HUD
-    this.createHUD();
-
     // Game state
     this.mode = this.registry.get('mode') || '1p';
     this.round = this.registry.get('round') || 1;
     this.scores = this.registry.get('scores') || { p1: 0, p2: 0 };
+
+    // Create HUD
+    this.createHUD();
+
     this.timer = 60;
     this.lastTime = this.time.now;
     this.tournament = this.registry.get('tournament') || 0;
@@ -820,7 +828,7 @@ class PlayScene extends Phaser.Scene {
         let cx = this.mode === '2p' ? (p ? 600 : 200) : 400;
         let scale = p ? -5 : 5;
         let ta = this.add.graphics({x: cx, y: 230}).setScale(scale, 5);
-        let ta2 = this.add.graphics({x: cx, y: 230}).setScale(scale, 5).setRotation(.2);
+        let ta2 = this.add.graphics({x: cx, y: 230}).setScale(scale, 5).setRotation(p ? -.2 : .2);
         c.add(ta); c.add(ta2);
         this.tA.push(ta); this.tA2.push(ta2);
 
@@ -900,8 +908,8 @@ class PlayScene extends Phaser.Scene {
 
     // Crowd textures
     const tg = this.add.graphics();
-    for (let i = 0; i < CROWD_SPRITES.length; i++) {
-      tg.clear(); dsp(tg, CROWD_SPRITES[i], 4, 5); tg.generateTexture('crowd' + i, 9, 10);
+    for (let i = 0; i < CROWD_SPR.length; i++) {
+      tg.clear(); dsp(tg, CROWD_SPR[i], 4, 5); tg.generateTexture('crowd' + i, 9, 10);
     }
     tg.destroy();
 
@@ -926,17 +934,17 @@ class PlayScene extends Phaser.Scene {
         sp.setScale(3);
         sp.setDepth(sp.y - 500); // Behind the ring
         sp.baseY = sp.y;
-        sp.phase = Math.random() * Math.PI * 2;
+        sp.phase = rand() * Math.PI * 2;
         this.ring.crowd.push(sp);
       }
     }
 
     // Rope spring system: each side has local bend at contact point
     this.ring.ropes = {
-      back: { amount: 0, target: 0, contactX: 0, k: 8, maxBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
-      front: { amount: 0, target: 0, contactX: 0, k: 8, maxBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
-      left: { amount: 0, target: 0, contactY: 0, k: 8, maxBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
-      right: { amount: 0, target: 0, contactY: 0, k: 8, maxBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
+      back: { amount: 0, target: 0, contactX: 0, k: 8, mBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
+      front: { amount: 0, target: 0, contactX: 0, k: 8, mBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
+      left: { amount: 0, target: 0, contactY: 0, k: 8, mBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
+      right: { amount: 0, target: 0, contactY: 0, k: 8, mBend: 25, decay: 0.92, pushVel: 0, soundTimer: 0 },
     };
 
 
@@ -958,7 +966,7 @@ class PlayScene extends Phaser.Scene {
     const height = isCheering ? 8 : 3;
 
     for (const sp of this.ring.crowd) {
-      sp.y = sp.baseY - Math.abs(Math.sin((this.crowdPhase || 0) + sp.phase)) * height;
+      sp.y = sp.baseY - abs(sin((this.crowdPhase || 0) + sp.phase)) * height;
     }
 
     // Apron (front face below mat) - on front layer so it covers player feet
@@ -1080,25 +1088,26 @@ class PlayScene extends Phaser.Scene {
    * .jnr = jumpNearRope       .wt = walkTimer          .pt = punchTimer
    * .as = aiState             .at = aiTimer            .ajo = aiJumpOffset
    * .crj = canRopeJump
-   * 
+   *
    * Bull states:
    * BULL_C (14) = Charge
    * BULL_B (15) = Bull Rebound
    * BULL_R (16) = Bull Run (after rebound)
-   * 
+   *
    * sp: parseSprite
    * dsp: drawSprite
+   * pers: personality
    */
 
   createPlayer(num, charName, x, y, color) {
     const p = {
       num, charName, x, y, vx: 0, vy: 0, facing: num === 1 ? 1 : -1,
-      state: ST.IDLE, health: P.maxHealth, color,
+      state: ST.IDLE, health: P.mHealth, color,
       charge: 0, charging: false, combo: 0, comboTimer: 0,
       downTimer: 0, carry: null, carriedBy: null,
       hitTimer: 0, invuln: 0, bullDist: 0, bullTimer: 0,
       shadowX: x, shadowY: y, shadowVX: 0, shadowVY: 0,
-      sprites: SPRITES[charName],
+      SPR: SPR[charName],
     };
 
     p.body = this.add.graphics();
@@ -1125,13 +1134,29 @@ class PlayScene extends Phaser.Scene {
     let h = this.hud = {};
     h.container = this.add.container(W / 2, H / 2).setScrollFactor(0).setDepth(2e3);
 
-    h.hp1Bg = this.add.rectangle(120 - W / 2, 30 - H / 2, 200, 24, 0).setStrokeStyle(2, 0xffffff);
-    h.hp1 = this.add.rectangle(20 - W / 2, 30 - H / 2, 200, 20, C.bar).setOrigin(0, 0.5);
-    h.p1Name = this.add.text(20 - W / 2, 50 - H / 2, 'P1', t(12, '#fff')).setOrigin(0, 0.5);
+    h.hp1Bg = this.add.rectangle(200 - W / 2, 40 - H / 2, 200, 24, 0x303030).setStrokeStyle(2, 0x000000);
+    h.hp1 = this.add.rectangle(100 - W / 2, 40 - H / 2, 200, 20, C.bar).setOrigin(0, 0.5);
 
-    h.hp2Bg = this.add.rectangle(W - 120 - W / 2, 30 - H / 2, 200, 24, 0).setStrokeStyle(2, 0xffffff);
-    h.hp2 = this.add.rectangle(W - 220 - W / 2, 30 - H / 2, 200, 20, C.bar).setOrigin(0, 0.5);
-    h.p2Name = this.add.text(W - 20 - W / 2, 50 - H / 2, 'P2', t(12, '#fff')).setOrigin(1, 0.5);
+    h.p1AvatarBg = this.add.rectangle(50 - W / 2, 40 - H / 2, 72, 64, 0x000000).setStrokeStyle(2, 0x444444);
+    h.p1AvatarWalk = this.add.graphics({x: 50 - W / 2, y: 45 - H / 2}).setScale(3);
+    dsp(h.p1AvatarWalk, this.p1.SPR.Walk.slice(0, 18), 0, 0);
+    h.p1AvatarJump = this.add.graphics({x: 50 - W / 2, y: 45 - H / 2}).setScale(3).setVisible(false);
+    dsp(h.p1AvatarJump, this.p1.SPR.Jump.slice(0, 18), 0, 0);
+    h.p1Avatar = this.add.container(0, 0, [h.p1AvatarBg, h.p1AvatarWalk, h.p1AvatarJump]);
+
+    h.hp2Bg = this.add.rectangle(W - 200 - W / 2, 40 - H / 2, 200, 24, 0x303030).setStrokeStyle(2, 0x000000);
+    h.hp2 = this.add.rectangle(W - 300 - W / 2, 40 - H / 2, 200, 20, C.bar).setOrigin(0, 0.5);
+
+    h.p2AvatarBg = this.add.rectangle(W - 50 - W / 2, 40 - H / 2, 72, 64, 0x000000).setStrokeStyle(2, 0x444444);
+    h.p2AvatarWalk = this.add.graphics({x: W - 50 - W / 2, y: 45 - H / 2}).setScale(-3, 3);
+    dsp(h.p2AvatarWalk, this.p2.SPR.Walk.slice(0, 18), 0, 0);
+    h.p2AvatarJump = this.add.graphics({x: W - 50 - W / 2, y: 45 - H / 2}).setScale(-3, 3).setVisible(false);
+    dsp(h.p2AvatarJump, this.p2.SPR.Jump.slice(0, 18), 0, 0);
+    h.p2Avatar = this.add.container(0, 0, [h.p2AvatarBg, h.p2AvatarWalk, h.p2AvatarJump]);
+
+    h.roundText = this.add.text(0, 40 - H / 2, `CAÍDA ${this.round}`, t(24, '#fff', 1)).setOrigin(0.5, 0.5).setStroke('#000', 6);
+
+    h.container.add([h.hp1Bg, h.hp1, h.hp2Bg, h.hp2, h.p1Avatar, h.p2Avatar, h.roundText]);
 
     h.winContainer = this.add.container(0, H / 2).setVisible(false);
     h.winTitle = this.add.text(0, -110, '.', t(24, '#fff')).setOrigin(0.5);
@@ -1139,7 +1164,7 @@ class PlayScene extends Phaser.Scene {
     h.winSubtitle = this.add.text(0, -30, 'FIN DE LA PELEA', t(16, '#fff')).setOrigin(0.5).setVisible(false);
     h.winPrompt = this.add.text(0, -H / 2, 'PRESIONA CUALQUIER BOTÓN PARA CONTINUAR', t(24, '#f7bb1b', 1)).setOrigin(0.5).setStroke('#000', 6).setVisible(false);
     h.winContainer.add([this.add.rectangle(0, 0, W, 150, 0, 0.5).setOrigin(0.5, 1), h.winTitle, h.winName, h.winSubtitle, h.winPrompt]);
-    h.container.add([h.hp1Bg, h.hp1, h.p1Name, h.hp2Bg, h.hp2, h.p2Name, h.winContainer]);
+    h.container.add(h.winContainer);
   }
 
   resetRound() {
@@ -1156,7 +1181,7 @@ class PlayScene extends Phaser.Scene {
     }
 
     this.p1.x = G.backLX + 30; this.p1.y = G.backY + 30;
-    this.p1.vx = 0; this.p1.vy = 0; this.p1.st = ST.IDLE; this.p1.hp = P.maxHealth;
+    this.p1.vx = 0; this.p1.vy = 0; this.p1.st = ST.IDLE; this.p1.hp = P.mHealth;
     this.p1.charge = 0; this.p1.charging = false; this.p1.combo = 0; this.p1.ct = 0;
     this.p1.dtm = 0; this.p1.carry = null; this.p1.carriedBy = null;
     this.p1.hitTimer = 0; this.p1.invuln = 0;
@@ -1164,7 +1189,7 @@ class PlayScene extends Phaser.Scene {
     this.p1.body.setAngle(0); this.p1.body.setAlpha(1);
 
     this.p2.x = G.frontRX - 120; this.p2.y = G.frontY - 120;
-    this.p2.vx = 0; this.p2.vy = 0; this.p2.st = ST.IDLE; this.p2.hp = P.maxHealth;
+    this.p2.vx = 0; this.p2.vy = 0; this.p2.st = ST.IDLE; this.p2.hp = P.mHealth;
     this.p2.charge = 0; this.p2.charging = false; this.p2.combo = 0; this.p2.ct = 0;
     this.p2.dtm = 0; this.p2.carry = null; this.p2.carriedBy = null;
     this.p2.hitTimer = 0; this.p2.invuln = 0;
@@ -1192,13 +1217,13 @@ class PlayScene extends Phaser.Scene {
 
     let caidaText = ['PRIMERA CAÍDA', 'SEGUNDA CAÍDA', 'TERCERA CAÍDA'][this.round - 1] || 'CAÍDA ' + this.round;
     const title = this.add.text(W / 2, H - 110, caidaText, t(32, '#f7bb1b', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
-    const subtitle = this.add.text(W / 2, H - 70, 'GANA EL MEJOR DE 3 CAÍDAS', t(16, '#ffffff', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
+    const subtitle = this.add.text(W / 2, H - 70, 'GANA EL MEJOR DE 3 CAÍDAS', t(16, '#fff', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
 
     const txt = this.add.text(W / 2, H / 2, '¡A PELEAR!', t(64, '#f7bb1b', 1)).setOrigin(0.5).setStroke('#915f01', 8).setScrollFactor(0).setDepth(2500);
     txt.setVisible(false);
 
-    // Sprites for 3, 2, 1
-    const sprites = [
+    // SPR for 3, 2, 1
+    const SPR = [
       sp('~5.3<4.4.3<1N4.3.2<1N1<1N4.3.2N1.1<1N4.6.1<1N4.^^^^^~', 12),
       sp('~3.5N4.2.1N5<1N3.2.2<2.2<1N3.7.1<1N3.6.2<1N3.5.2<1N4.4.2<1N5.3.2<1N3.1N2.2.3<5N2.2.7<1N2.~', 12),
       sp('~3.7N2.2.4<>7.1<2N2.6.2<1N3.4.3<2N3.5.4<1N2.2.1<4.2<1N2.2.2<2.3<1N2.2.7<1N2.3.3N>~', 12)
@@ -1208,7 +1233,7 @@ class PlayScene extends Phaser.Scene {
 
     const drawNumber = (n) => {
       gfx.clear();
-      dsp(gfx, sprites[n - 1], 0, 0);
+      dsp(gfx, SPR[n - 1], 0, 0);
     };
 
     drawNumber(step);
@@ -1248,8 +1273,8 @@ class PlayScene extends Phaser.Scene {
     }
 
     if (p.st === ST.HIT) {
-      drawX += (Math.random() - 0.5) * 10;
-      drawY += (Math.random() - 0.5) * 10;
+      drawX += (rand() - 0.5) * 10;
+      drawY += (rand() - 0.5) * 10;
     }
 
     if (p.st === ST.PUNCH) {
@@ -1271,7 +1296,7 @@ class PlayScene extends Phaser.Scene {
       if (p.st === ST.BULL_R) spdMod = 2.0;
       if (p.st === ST.BULL_B) spdMod = 1.0;
       p.wt = (p.wt || 0) + (this.game.loop.delta / 1000) * spdMod;
-      drawY += Math.abs(Math.sin(p.wt * 15)) * -6; // vertical bob
+      drawY += abs(sin(p.wt * 15)) * -6; // vertical bob
     } else {
       p.wt = 0;
     }
@@ -1282,7 +1307,7 @@ class PlayScene extends Phaser.Scene {
       sy = 4 - (prog * 1.5);
       sx = 4 + (prog * 1.0);
       drawY += (4 - sy) * 12; // Compensate to keep feet on ground
-      if (prog > 0.8) drawX += (Math.random() - 0.5) * 4; // Vibrate
+      if (prog > 0.8) drawX += (rand() - 0.5) * 4; // Vibrate
     }
 
     p.body.setPosition(drawX, drawY);
@@ -1301,8 +1326,8 @@ class PlayScene extends Phaser.Scene {
     else if (p.st === ST.SUPLEX_R) frame = 'Jump';
 
     p.body.clear();
-    if (p.sprites && p.sprites[frame] && p.sprites[frame].length > 0) {
-      dsp(p.body, p.sprites[frame], 0, 0, { shadow: true });
+    if (p.SPR && p.SPR[frame] && p.SPR[frame].length > 0) {
+      dsp(p.body, p.SPR[frame], 0, 0, { shadow: true });
     } else {
       // Fallback: draw rectangles manually onto the graphics object
       let fillC = p.color;
@@ -1310,7 +1335,7 @@ class PlayScene extends Phaser.Scene {
 
       // Damage blink
       if (p.st === ST.HIT) {
-        alphaMultiplier = 0.7 + Math.sin(this.time.now * 0.02) * 0.3;
+        alphaMultiplier = 0.7 + sin(this.time.now * 0.02) * 0.3;
       }
       // KO grayed out
       if (p.st === ST.KO) fillC = 0x888888;
@@ -1337,7 +1362,7 @@ class PlayScene extends Phaser.Scene {
       p.shad.setVisible(true);
     } else { p.shad.setVisible(false); }
 
-    // Face the correct direction. We scale by 4 here so 24x24 sprites appear larger (96x96)
+    // Face the correct direction. We scale by 4 here so 24x24 SPR appear larger (96x96)
     p.body.setScale(p.f * sx, sy);
 
     if (p.st === ST.DOWN) { p.body.setAngle(90); }
@@ -1364,9 +1389,9 @@ class PlayScene extends Phaser.Scene {
       p.body.setAngle(fraction * -360);
     }
     else if (p.st === ST.BULL_C || p.st === ST.BULL_R || p.st === ST.BULL_B) {
-      p.body.setAngle((15 + Math.sin(p.wt * 15) * 2) * p.f);
+      p.body.setAngle((15 + sin(p.wt * 15) * 2) * p.f);
     }
-    else { p.body.setAngle(isWalking ? Math.sin(p.wt * 15) * 2 * p.f : 0); }
+    else { p.body.setAngle(isWalking ? sin(p.wt * 15) * 2 * p.f : 0); }
 
     if (p.comboTxt) {
       p.comboTxt.setDepth(baseDepth + 0.4);
@@ -1381,10 +1406,45 @@ class PlayScene extends Phaser.Scene {
   }
 
   updateHUD() {
-    const w1 = (this.p1.hp / P.maxHealth) * 200;
-    const w2 = (this.p2.hp / P.maxHealth) * 200;
-    this.hud.hp1.setSize(w1, 20); this.hud.hp1.setFillStyle(this.p1.hp > 30 ? C.bar : 0xff0000);
-    this.hud.hp2.setSize(w2, 20); this.hud.hp2.setFillStyle(this.p2.hp > 30 ? C.bar : 0xff0000);
+    let dt = this.game.loop.delta / 1000;
+    this.p1.shakeTimer = Math.max(0, (this.p1.shakeTimer || 0) - dt);
+    this.p2.shakeTimer = Math.max(0, (this.p2.shakeTimer || 0) - dt);
+
+    const w1 = (this.p1.hp / P.mHealth) * 200;
+    const w2 = (this.p2.hp / P.mHealth) * 200;
+    this.hud.hp1.setSize(w1, 20); this.hud.hp1.setFillStyle(this.p1.hp <= P.mHealth * 0.2 ? 0xDE4343 : C.bar);
+    this.hud.hp2.setSize(w2, 20); this.hud.hp2.setFillStyle(this.p2.hp <= P.mHealth * 0.2 ? 0xDE4343 : C.bar);
+
+    let off1 = this.p1.shakeTimer > 0 ? (rand() - 0.5) * 8 : 0;
+    let off2 = this.p2.shakeTimer > 0 ? (rand() - 0.5) * 8 : 0;
+
+    this.hud.hp1Bg.setX(200 - W / 2 + off1);
+    this.hud.hp1.setX(100 - W / 2 + off1);
+    this.hud.hp2Bg.setX(W - 200 - W / 2 + off2);
+    this.hud.hp2.setX(W - 300 - W / 2 + off2);
+    
+    this.hud.p1Avatar.setX(off1);
+    this.hud.p2Avatar.setX(off2);
+
+    if (this.p1.st === 12) {
+      this.hud.p1AvatarJump.setVisible(this.p1.jh > 10);
+      this.hud.p1AvatarWalk.setVisible(this.p1.jh <= 10);
+      this.hud.p1Avatar.setY(-this.p1.jh * 0.4);
+    } else {
+      this.hud.p1AvatarJump.setVisible(false);
+      this.hud.p1AvatarWalk.setVisible(true);
+      this.hud.p1Avatar.setY(0);
+    }
+    
+    if (this.p2.st === 12) {
+      this.hud.p2AvatarJump.setVisible(this.p2.jh > 10);
+      this.hud.p2AvatarWalk.setVisible(this.p2.jh <= 10);
+      this.hud.p2Avatar.setY(-this.p2.jh * 0.4);
+    } else {
+      this.hud.p2AvatarJump.setVisible(false);
+      this.hud.p2AvatarWalk.setVisible(true);
+      this.hud.p2Avatar.setY(0);
+    }
 
     // Scale the entire HUD container inversely to camera zoom so it stays perfectly pinned to the screen boundaries
     if (this.cameras.main.zoom) {
@@ -1421,9 +1481,9 @@ class PlayScene extends Phaser.Scene {
 
     // Left rope
     if (px < minX + 5) {
-      const pushVel = Math.abs(isShadow ? (p.svx || 0) : (p.vx || 0));
+      const pushVel = abs(isShadow ? (p.svx || 0) : (p.vx || 0));
       const r = ropes.left;
-      r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
+      r.target = Math.max(r.target, Math.min(pushVel * 4, r.mBend));
       r.contactY = py;
       r.pushVel = pushVel;
 
@@ -1440,9 +1500,9 @@ class PlayScene extends Phaser.Scene {
 
     // Right rope
     if (px > maxX - 5) {
-      const pushVel = Math.abs(isShadow ? (p.svx || 0) : (p.vx || 0));
+      const pushVel = abs(isShadow ? (p.svx || 0) : (p.vx || 0));
       const r = ropes.right;
-      r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
+      r.target = Math.max(r.target, Math.min(pushVel * 4, r.mBend));
       r.contactY = py;
       r.pushVel = pushVel;
 
@@ -1459,9 +1519,9 @@ class PlayScene extends Phaser.Scene {
 
     // Back rope
     if (py < minY + 5) {
-      const pushVel = Math.abs(isShadow ? (p.svy || 0) : (p.vy || 0));
+      const pushVel = abs(isShadow ? (p.svy || 0) : (p.vy || 0));
       const r = ropes.back;
-      r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
+      r.target = Math.max(r.target, Math.min(pushVel * 4, r.mBend));
       r.contactX = px;
       r.pushVel = pushVel;
 
@@ -1478,9 +1538,9 @@ class PlayScene extends Phaser.Scene {
 
     // Front rope
     if (py > maxY - 5) {
-      const pushVel = Math.abs(isShadow ? (p.svy || 0) : (p.vy || 0));
+      const pushVel = abs(isShadow ? (p.svy || 0) : (p.vy || 0));
       const r = ropes.front;
-      r.target = Math.max(r.target, Math.min(pushVel * 4, r.maxBend));
+      r.target = Math.max(r.target, Math.min(pushVel * 4, r.mBend));
       r.contactX = px;
       r.pushVel = pushVel;
 
@@ -1531,7 +1591,7 @@ class PlayScene extends Phaser.Scene {
 
   // Unified physics engine for both player and AI
   // inputs: { up, down, left, right, btn1, btn2, btn3, btn4 }
-  applyPhysics(p, dt, inputs, opp) {
+  sim(p, dt, inputs, opp) {
     const s = this;
     if (p.st === ST.KO || p.st === ST.WIN || p.carriedBy) return;
 
@@ -1581,18 +1641,18 @@ class PlayScene extends Phaser.Scene {
         // Pivot around the feet instead of the center
         const theta = -Math.PI / 2 * p.f * progress; // 0 to -90 degrees
         const feetR = 20;
-        p.x = p.sx + feetR * Math.sin(theta);
-        p.y = p.sy + feetR * (1 - Math.cos(theta)) - jumpOffset;
+        p.x = p.sx + feetR * sin(theta);
+        p.y = p.sy + feetR * (1 - cos(theta)) - jumpOffset;
 
         // Position the receiver on an arc closely coordinated with the attacker's body
         // Angle goes from PI/2 (front) -> 0 (top) -> -PI/2 (behind)
         const angleRads = (Math.PI / 2) - (progress * Math.PI);
-        opp.sx = p.sx + Math.sin(angleRads) * radius * p.f;
+        opp.sx = p.sx + sin(angleRads) * radius * p.f;
         opp.sy = p.sy; // Opponent lands at the same Y as attacker's base
 
         // Receiver stays glued to the attacker's shifting center of mass
-        opp.x = p.x + Math.sin(angleRads) * radius * p.f;
-        opp.y = p.y - Math.cos(angleRads) * radius;
+        opp.x = p.x + sin(angleRads) * radius * p.f;
+        opp.y = p.y - cos(angleRads) * radius;
 
       } else if (p.spt > LIFT_TIME && p.spt < LIFT_TIME + 0.1 && p.carry) {
         // Impact
@@ -1683,7 +1743,7 @@ class PlayScene extends Phaser.Scene {
       const maxY = G.frontY - 20 - 5;
 
       const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
-      if (shadowDist < 60 && Math.abs(p.jh - 40) < 40) {
+      if (shadowDist < 60 && abs(p.jh - 40) < 40) {
         p.flyDist = 0; // Drop straight down if passing over opponent
       }
 
@@ -1703,8 +1763,8 @@ class PlayScene extends Phaser.Scene {
     if (p.st === ST.JUMP) {
       const airSpd = P.walkSpd * 0.1; // little mid-air control
 
-      if (p.svx === undefined) p.svx = 0;
-      if (p.svy === undefined) p.svy = 0;
+      if (!p.svx) p.svx = 0;
+      if (!p.svy) p.svy = 0;
 
       if (!p.jnr && !p.ra) {
         if (inputs.left) p.svx -= airSpd;
@@ -1755,11 +1815,11 @@ class PlayScene extends Phaser.Scene {
       p.y = p.sy - p.jh;
 
       if (p.jnr && p.vy > 0 && p.jh <= 90) {
-         if (Math.abs(p.sx - (minX - 10)) < 25) {
+         if (abs(p.sx - (minX - 10)) < 25) {
            p.sx = minX - 10;
            p.st = ST.ONROPE;
            p.f = 1;
-         } else if (Math.abs(p.sx - (maxX + 10)) < 25) {
+         } else if (abs(p.sx - (maxX + 10)) < 25) {
            p.sx = maxX + 10;
            p.st = ST.ONROPE;
            p.f = -1;
@@ -1777,10 +1837,15 @@ class PlayScene extends Phaser.Scene {
 
       if (p.jh <= 0) {
         p.jh = p.vy = 0; p.y = p.sy;
-        if (!p.fd && !p.ra && Math.hypot(p.sx - opp.x, p.sy - opp.y) < 60 && ![6,7,8,10,11].includes(opp.st)) {
-          damage(s, opp, P.punchDmg * 2, p.f * P.punchKb);
-          opp.st = 6; opp.hitTimer = 0.2;
-          shake(s, 0.02, 0.2); snd('punch'); particles(s, opp.x, opp.y, C.txt, 10);
+        if (!p.fd && !p.ra && Math.hypot(p.sx - opp.x, p.sy - opp.y) < 60 && ![6,10,11].includes(opp.st)) {
+          if (opp.st === 7 || opp.st === 8) {
+            damage(s, opp, P.punchDmg, p.f * P.punchKb * 0.2);
+            shake(s, 0.015, 0.15); snd('slam'); particles(s, opp.x, opp.y, C.txt, 15);
+          } else {
+            damage(s, opp, P.punchDmg * 2, p.f * P.punchKb);
+            opp.st = 6; opp.hitTimer = 0.2;
+            shake(s, 0.02, 0.2); snd('punch'); particles(s, opp.x, opp.y, C.txt, 10);
+          }
         } else {
           snd('slam'); particles(s, p.x, p.y, C.txt, 6); shake(s, 0.005, 0.1);
         }
@@ -1808,7 +1873,7 @@ class PlayScene extends Phaser.Scene {
       p.vx = p.f * spd;
       p.vy = 0;
       p.x += p.vx;
-      p.bd += Math.abs(p.vx);
+      p.bd += abs(p.vx);
       p.sx = p.x;
       p.sy = p.y;
       s.applyRopeSpring(p, dt, false);
@@ -1817,7 +1882,7 @@ class PlayScene extends Phaser.Scene {
         let isPunching = inputs.btn1;
         let hitboxRange = isPunching ? 72 : 40;
 
-        if (Math.abs(p.sx - opp.sx) < hitboxRange && Math.abs(p.sy - opp.y) < 40) {
+        if (abs(p.sx - opp.sx) < hitboxRange && abs(p.sy - opp.y) < 40) {
           if (opp.st === ST.BULL_C || opp.st === ST.BULL_R) {
             // Dash Clash!
             p.st = ST.IDLE;
@@ -1950,8 +2015,8 @@ class PlayScene extends Phaser.Scene {
       p.fd = false;
       const bounds = s.getRingBounds(p.sy);
       p.jnr = false;
-      if (p.f === -1 && Math.abs(p.sx - bounds.left) < 90) p.jnr = true;
-      if (p.f === 1 && Math.abs(p.sx - bounds.right) < 90) p.jnr = true;
+      if (p.f === -1 && abs(p.sx - bounds.left) < 90) p.jnr = true;
+      if (p.f === 1 && abs(p.sx - bounds.right) < 90) p.jnr = true;
 
       if (p.jnr) {
         const targetX = p.f === -1 ? bounds.left - 5 : bounds.right + 5;
@@ -1970,7 +2035,7 @@ class PlayScene extends Phaser.Scene {
         const isAntiAir = [4,9,13].includes(opp.st); // [ST.JUMP, ST.FLY, ST.ONROPE]
         // Extend vertical hitbox for anti-airs so grounded punches reach up to hitting jumping/roping opponents
         const vertHitbox = isAntiAir ? 120 : 40;
-        if (Math.abs(p.sx - opp.sx) < 64 && Math.abs(p.sy - opp.y) < vertHitbox) {
+        if (abs(p.sx - opp.sx) < 64 && abs(p.sy - opp.y) < vertHitbox) {
           if (p.f === opp.f && opp.st !== ST.DOWN && opp.st !== ST.HIT && !isAntiAir) {
             // SUPLEX! Punching from behind
             p.st = ST.SUPLEX_A; p.spt = 0; p.carry = opp;
@@ -2054,13 +2119,13 @@ class PlayScene extends Phaser.Scene {
     if (this.me && this.winPhase !== 2) {
       for (const k in inputs) inputs[k] = false;
     }
-    this.applyPhysics(p, dt, inputs, opp);
+    this.sim(p, dt, inputs, opp);
   }
 
   // AI generates virtual inputs and passes them to the same physics
   updateAI(p, opp, dt) {
     const s = this;
-    const personality = AI[p.charName] || AI[0];
+    const pers = AI[p.charName] || AI[0];
 
     const dx = opp.x - p.x, dy = opp.y - p.y;
     const d = Math.hypot(dx, dy);
@@ -2069,7 +2134,7 @@ class PlayScene extends Phaser.Scene {
     const inputs = { up: false, down: false, left: false, right: false, btn1: false, btn2: false, btn3: false, btn4: false };
 
     if (this.me && this.winPhase !== 2) {
-      this.applyPhysics(p, dt, inputs, opp);
+      this.sim(p, dt, inputs, opp);
       return;
     }
 
@@ -2090,15 +2155,15 @@ class PlayScene extends Phaser.Scene {
     if (p.at <= 0) {
       p.at = RndF(0.2, 0.6);
 
-      const healthPct = p.hp / P.maxHealth;
-      const oppHealthPct = opp.hp / P.maxHealth;
+      const healthPct = p.hp / P.mHealth;
+      const oppHealthPct = opp.hp / P.mHealth;
 
       // Evade aerial attacks (simulating human reaction time)
       if (canAct && oppInAir && d < 250) {
-        // AI has a chance to fail to react based on personality
-        if (Math.random() < personality.jumpChance * 2) {
-          p.as = 'jump_attack';
-        } else if (Math.random() < 0.6) {
+        // AI has a chance to fail to react based on pers
+        if (rand() < pers.jumpCh * 2) {
+          p.as = 'jump_atk';
+        } else if (rand() < 0.6) {
           p.as = 'dodge_y';
           p.at = 0.6; // Commit to the dodge
         } else {
@@ -2106,8 +2171,8 @@ class PlayScene extends Phaser.Scene {
         }
       } else if (opp.st === ST.DOWN) {
         const bounds = s.getRingBounds(p.sy);
-        const distL = Math.abs(p.sx - bounds.left);
-        const distR = Math.abs(p.sx - bounds.right);
+        const distL = abs(p.sx - bounds.left);
+        const distR = abs(p.sx - bounds.right);
 
         if (d < 250 && Math.min(distL, distR) < 200) {
           p.as = 'rope_bounce';
@@ -2124,28 +2189,28 @@ class PlayScene extends Phaser.Scene {
         p.at = 0.3;
       } else if (healthPct < 0.3 && oppHealthPct > 0.5) {
         if (d < 100) {
-          p.as = Math.random() < 0.5 ? 'jump_attack' : 'wait';
+          p.as = rand() < 0.5 ? 'jump_atk' : 'wait';
         } else {
-          p.as = Math.random() < 0.6 ? 'retreat' : 'circle';
+          p.as = rand() < 0.6 ? 'retreat' : 'circle';
         }
       } else if (d < 80) {
-        const r = Math.random();
-        if (r < personality.punchChance * 3) p.as = 'attack';
-        else if (r < personality.punchChance * 3 + personality.jumpChance * 2) p.as = 'jump_attack';
+        const r = rand();
+        if (r < pers.punchCh * 3) p.as = 'attack';
+        else if (r < pers.punchCh * 3 + pers.jumpCh * 2) p.as = 'jump_atk';
         else p.as = 'circle';
       } else if (d < 200) {
-        const r = Math.random();
-        if (r < personality.runChance) p.as = 'approach';
-        else if (r < personality.runChance + personality.jumpChance * 2) p.as = 'jump_attack';
+        const r = rand();
+        if (r < pers.runCh) p.as = 'approach';
+        else if (r < pers.runCh + pers.jumpCh * 2) p.as = 'jump_atk';
         else p.as = 'circle';
       } else {
-        const r = Math.random();
+        const r = rand();
         if (r < 0.15) p.as = 'bull_c';
-        else if (r < 0.15 + personality.jumpChance * 2) p.as = 'rope_bounce';
-        else p.as = Math.random() < personality.runChance ? 'approach' : 'wait';
+        else if (r < 0.15 + pers.jumpCh * 2) p.as = 'rope_bounce';
+        else p.as = rand() < pers.runCh ? 'approach' : 'wait';
       }
 
-      if (personality === AI.mistico && Math.random() < 0.15) p.as = 'jump_attack';
+      if (pers === AI.mistico && rand() < 0.15) p.as = 'jump_atk';
     }
 
     // Execute AI strategy
@@ -2153,10 +2218,10 @@ class PlayScene extends Phaser.Scene {
       case 'approach':
         if (d > 44) {
           // Human-like Y-axis first alignment
-          if (Math.abs(dy) > 32) {
+          if (abs(dy) > 32) {
             inputs.up = dy < 0; inputs.down = dy > 0;
             // Also close some X distance if far away
-            if (Math.abs(dx) > 80) {
+            if (abs(dx) > 80) {
                inputs.left = dx < 0; inputs.right = dx > 0;
             }
           } else {
@@ -2182,9 +2247,9 @@ class PlayScene extends Phaser.Scene {
       case 'retreat':
         if (d < 300) {
           const ang = Math.atan2(dy, dx);
-          const mx = -Math.cos(ang) * P.walkSpd;
-          const my = -Math.sin(ang) * P.walkSpd;
-          if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
+          const mx = -cos(ang) * P.walkSpd;
+          const my = -sin(ang) * P.walkSpd;
+          if (abs(mx) > abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
         } else {
           p.as = 'wait'; p.at = 1.0;
@@ -2194,35 +2259,35 @@ class PlayScene extends Phaser.Scene {
       case 'circle':
         {
           const ang = Math.atan2(dy, dx) + Math.PI / 2;
-          const mx = Math.cos(ang) * P.walkSpd;
-          const my = Math.sin(ang) * P.walkSpd;
-          if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
+          const mx = cos(ang) * P.walkSpd;
+          const my = sin(ang) * P.walkSpd;
+          if (abs(mx) > abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
-          if (Math.random() < 0.02) p.as = 'circle_other';
+          if (rand() < 0.02) p.as = 'circle_other';
         }
         break;
 
       case 'circle_other':
         {
           const ang = Math.atan2(dy, dx) - Math.PI / 2;
-          const mx = Math.cos(ang) * P.walkSpd;
-          const my = Math.sin(ang) * P.walkSpd;
-          if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
+          const mx = cos(ang) * P.walkSpd;
+          const my = sin(ang) * P.walkSpd;
+          if (abs(mx) > abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
-          if (Math.random() < 0.02) p.as = 'circle';
+          if (rand() < 0.02) p.as = 'circle';
         }
         break;
 
       case 'attack':
         if (d < 60) {
           // Only punch if Y is properly aligned to avoid whiffing
-          if (Math.abs(dy) < 16) {
+          if (abs(dy) < 16) {
             inputs.btn1 = true;
             p.at = 0.15; // Mash fast for combo
           } else {
             // Realign Y before punching
             inputs.up = dy < 0; inputs.down = dy > 0;
-            if (Math.abs(dx) > 40) {
+            if (abs(dx) > 40) {
               inputs.left = dx < 0; inputs.right = dx > 0;
             }
           }
@@ -2243,13 +2308,13 @@ class PlayScene extends Phaser.Scene {
         } else if (d > 44) {
           const ang = Math.atan2(dy, dx);
           const spd = P.walkSpd;
-          const mx = Math.cos(ang) * spd;
-          const my = Math.sin(ang) * spd;
-          if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
+          const mx = cos(ang) * spd;
+          const my = sin(ang) * spd;
+          if (abs(mx) > abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
         } else {
           // Once close, decide to lift or combo
-          if (Math.random() < 0.4 && opp.st === ST.DOWN) {
+          if (rand() < 0.4 && opp.st === ST.DOWN) {
             inputs.btn1 = true;
           } else {
             inputs.btn1 = true;
@@ -2263,15 +2328,15 @@ class PlayScene extends Phaser.Scene {
       case 'rope_bounce':
         if (![4,9,13].includes(p.st)) { // ![ST.JUMP, ST.FLY, ST.ONROPE]
           const bounds = s.getRingBounds(p.sy);
-          const distL = Math.abs(p.sx - bounds.left);
-          const distR = Math.abs(p.sx - bounds.right);
+          const distL = abs(p.sx - bounds.left);
+          const distR = abs(p.sx - bounds.right);
 
           inputs.left = distL < distR;
           inputs.right = distR <= distL;
 
           if (Math.min(distL, distR) < 80) {
             inputs.btn3 = true; // Jump!
-            p.ajo = (Math.random() - 0.5) * 250;
+            p.ajo = (rand() - 0.5) * 250;
             p.as = 'in_air'; p.at = 1.5;
           }
         }
@@ -2285,10 +2350,10 @@ class PlayScene extends Phaser.Scene {
         }
         break;
 
-      case 'jump_attack':
+      case 'jump_atk':
         if (p.st !== ST.JUMP) {
           inputs.btn3 = true;
-          p.ajo = (Math.random() - 0.5) * 250;
+          p.ajo = (rand() - 0.5) * 250;
           p.as = 'in_air'; p.at = 1.0;
         }
         break;
@@ -2310,7 +2375,7 @@ class PlayScene extends Phaser.Scene {
           if (p.vy > 0 && p.jh < 60) {
             const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
             // Only body slam if close, but sometimes randomly hold back
-            if (shadowDist < 80 && Math.random() < 0.7) {
+            if (shadowDist < 80 && rand() < 0.7) {
               inputs.btn1 = true;
               p.as = 'retreat'; p.at = 1.0;
             }
@@ -2319,17 +2384,17 @@ class PlayScene extends Phaser.Scene {
         break;
 
       case 'wait':
-        if (Math.random() < 0.05) {
-          const mx = (Math.random() - 0.5) * P.walkSpd;
-          const my = (Math.random() - 0.5) * P.walkSpd;
-          if (Math.abs(mx) > Math.abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
+        if (rand() < 0.05) {
+          const mx = (rand() - 0.5) * P.walkSpd;
+          const my = (rand() - 0.5) * P.walkSpd;
+          if (abs(mx) > abs(my)) { inputs.left = mx < 0; inputs.right = mx > 0; }
           else { inputs.up = my < 0; inputs.down = my > 0; }
         }
         break;
     }
 
     // Apply the same physics as the player with AI inputs
-    this.applyPhysics(p, dt, inputs, opp);
+    this.sim(p, dt, inputs, opp);
   }
 
   update() {
@@ -2350,16 +2415,17 @@ class PlayScene extends Phaser.Scene {
           if (isPress(k)) snd('punch');
         });
       }
-      this.tStartText.setAlpha(0.65 + 0.4 * Math.sin(this.time.now / 300));
+      this.tStartText.setAlpha(0.65 + 0.4 * sin(this.time.now / 300));
       clearPressed();
 
       let tm = this.time.now;
       this.tA.forEach((ta, p) => {
-        let s = p ? this.p2.sprites : this.p1.sprites;
+        let s = p ? this.p2.SPR : this.p1.SPR;
+        let dir = p ? -1 : 1;
         ta.clear(); this.tA2[p].clear();
-        dsp(ta, s[tm%500<250?'Punch':'Walk'], -24, 0);
-        dsp(this.tA2[p], s.Walk, 0, Math.abs(Math.sin(tm/50))*-3);
-        dsp(ta, s.Jump, 24, Math.abs(Math.sin(tm/150))*-10);
+        dsp(ta, s[tm%500<250?'Punch':'Walk'], -24 * dir, 0);
+        dsp(this.tA2[p], s.Walk, 0, abs(sin(tm/50))*-3);
+        dsp(ta, s.Jump, 24 * dir, abs(sin(tm/150))*-10);
       });
     }
 
@@ -2520,7 +2586,7 @@ class PauseScene extends Phaser.Scene {
     labels.forEach((l, i) => {
       const y = H / 2 + 20 + i * 60;
       const bg = this.add.rectangle(W / 2, y, 300, 45, 0x1a1e05).setStrokeStyle(2, 0x3a3a0a);
-      const txt = this.add.text(W / 2, y, l, t(20, '#ffffff')).setOrigin(0.5);
+      const txt = this.add.text(W / 2, y, l, t(20, '#fff')).setOrigin(0.5);
       this.items.push({ bg, txt });
     });
 
@@ -2531,7 +2597,7 @@ class PauseScene extends Phaser.Scene {
   us() {
     this.items.forEach((o, i) => {
       o.bg.setFillStyle(i === this.sel ? 0xf7bb1b : 0x1a1e05);
-      o.txt.setColor(i === this.sel ? '#000000' : '#ffffff');
+      o.txt.setColor(i === this.sel ? '#000' : '#fff');
     });
   }
 
