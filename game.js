@@ -54,7 +54,7 @@ function parseCSEF(s, w) {
   return r;
 }
 
-function parseSprite(sData, w = 24) {
+function sp(sData, w = 24) {
   if (!sData) return [];
   if (Array.isArray(sData)) return sData;
   try {
@@ -68,7 +68,7 @@ function parseSprite(sData, w = 24) {
   }
 }
 
-function drawSprite(gfx, sData, x, y, opt = {}) {
+function dsp(gfx, sData, x, y, opt = {}) {
   if (!sData || !sData.length) return;
   const h = sData.length;
   const w = sData[0]?.length || 0;
@@ -92,7 +92,7 @@ function drawSprite(gfx, sData, x, y, opt = {}) {
     for (let c = 0; c < sData[r].length; c++) {
       const col = COLOR_MAP[sData[r][c]];
       if (col != null) {
-        gfx.fillStyle(opt.white ? 0xCCC77C : col, 1);
+        gfx.fillStyle(opt.white ? 0xBDBDBD : col, 1);
         gfx.fillRect(x - cx + c | 0, y - cy + r | 0, 1, 1);
       }
     }
@@ -132,17 +132,17 @@ const CH = [
 }]
 ];
 
-const ANGEL_SPRITE = parseSprite('2.3<9.6.2.1<1.2<9.5.2.1<3?9.5.3.1<9.7.3.2<4.2?8.1?1?3.1<3.1?2<1?4.4?1<2?1.2<2.1?2<1?2.5?1<1.1<2?1.1<3.3<2.1?2<2}1.1.2<2?1}2<2.1<2.2?1<2}2.2.2<1?1}5<1.1}1?4<2.2.2<2?1}6<1}3<1?2.3.1<1?3}1<2?2<1}1<2?3.4.3?1}5?1}1<5.5.2?3}3<1}6.7.2}3<1}3<4.7.1}4<3.3<2.7.1<2}2<8.6.2}5<7.5.2}1?5<7.5.1}1?1}5<7.5.1?2}3<2}1<6.4.2?1}5<1}1<6.5.1?1}4<1?1<1}6.6.1}4<1?2}6.7.1?3<1?1<7.7.1?3<1.2<6.7.1?1<3K2<6.7.1K1<4K2<5.7.1{2K3{7.7.3{>^6.1K2{1,>^6.1K1{2,>^5.1K2{2,>^^5.1K1{3,>5.1K2{3,3{1K5.', 20);
+const ANGEL_SPRITE = sp('2.3<9.6.2.1<1.2<9.5.2.1<3?9.5.3.1<9.7.3.2<4.2?8.1?1?3.1<3.1?2<1?4.4?1<2?1.2<2.1?2<1?2.5?1<1.1<2?1.1<3.3<2.1?2<2}1.1.2<2?1}2<2.1<2.2?1<2}2.2.2<1?1}5<1.1}1?4<2.2.2<2?1}6<1}3<1?2.3.1<1?3}1<2?2<1}1<2?3.4.3?1}5?1}1<5.5.2?3}3<1}6.7.2}3<1}3<4.7.1}4<3.3<2.7.1<2}2<8.6.2}5<7.5.2}1?5<7.5.1}1?1}5<7.5.1?2}3<2}1<6.4.2?1}5<1}1<6.5.1?1}4<1?1<1}6.6.1}4<1?2}6.7.1?3<1?1<7.7.1?3<1.2<6.7.1?1<3K2<6.7.1K1<4K2<5.7.1{2K3{7.7.3{>^6.1K2{1,>^6.1K1{2,>^5.1K2{2,>^^5.1K1{3,>5.1K2{3,3{1K5.', 20);
 
 const CROWD_SPRITES = [
-  parseSprite('4.1J4.3.3J3.2.1?1J1?1J1?2.1.7J1.2.5,2.2.1,1A1,1A1,2.2.5,2.3.1X1,1X3.1.7X1.9Y', 9),
-  parseSprite('~~2.5A2.1{1.5A1.1{1[1.5{1.1[1[1.1{1A1{1A1{1.1[1[1.5{1.1[1[2.1[1{1[2.1[9[^', 9),
-  parseSprite('~~2.5A2.1,1.4A1[1.1,1G1.1A3,1A1[1G1G1.2A1,2A1.1G1G1.1A3,1A1.1G2G1A1G1,1G1A2G2G1A3G1A2G9G', 9),
+  sp('4.1J4.3.3J3.2.1?1J1?1J1?2.1.7J1.2.5,2.2.1,1A1,1A1,2.2.5,2.3.1X1,1X3.1.7X1.9Y', 9),
+  sp('~~2.5A2.1{1.5A1.1{1[1.5{1.1[1[1.1{1A1{1A1{1.1[1[1.5{1.1[1[2.1[1{1[2.1[9[^', 9),
+  sp('~~2.5A2.1,1.4A1[1.1,1G1.1A3,1A1[1G1G1.2A1,2A1.1G1G1.1A3,1A1.1G2G1A1G1,1G1A2G2G1A3G1A2G9G', 9),
 ];
 const SPRITES = CH.map(c => {
   const s = {};
   for (const [frame, data] of Object.entries(c[1])) {
-    s[frame] = data ? parseSprite(data, 24) : null;
+    s[frame] = data ? sp(data, 24) : null;
   }
   return s;
 });
@@ -243,7 +243,7 @@ const ST = {
   IDLE: 1, WALK: 2, RUN: 3, JUMP: 4,
   PUNCH: 5, HIT: 6, DOWN: 7, KO: 8, FLY: 9,
   SUPLEX_A: 10, SUPLEX_R: 11, WIN: 12, ONROPE: 13,
-  BULL_CHARGE: 14, BULL_BOUNCE: 15, BULL_REBOUND: 16
+  BULL_C: 14, BULL_B: 15, BULL_R: 16
 };
 
 const AI = [
@@ -349,7 +349,7 @@ function drawCityBackground(scene, includeAngel = true) {
     const angelGfx = scene.add.graphics();
     angelGfx.scale = 5;
     angelGfx.setDepth(5);
-    drawSprite(angelGfx, ANGEL_SPRITE, (W / 2) / 5, (H - 300) / 5);
+    dsp(angelGfx, ANGEL_SPRITE, (W / 2) / 5, (H - 300) / 5);
   }
 
   // Overlay to dim background slightly behind text
@@ -442,7 +442,7 @@ function drawCityBackground(scene, includeAngel = true) {
     const angelGfx = scene.add.graphics();
     angelGfx.scale = 5;
     angelGfx.setDepth(5);
-    drawSprite(angelGfx, ANGEL_SPRITE, (W / 2) / 5, (H - 300) / 5);
+    dsp(angelGfx, ANGEL_SPRITE, (W / 2) / 5, (H - 300) / 5);
   }
 
   // Overlay to dim background slightly behind text
@@ -579,7 +579,7 @@ class CharSelectScene extends Phaser.Scene {
       const spr = SPRITES[i]?.Walk;
       if (spr) {
         tg.clear();
-        drawSprite(tg, spr, 12, 12);
+        dsp(tg, spr, 12, 12);
         tg.generateTexture('charPvw_' + i, 24, 24);
       }
     }
@@ -829,12 +829,12 @@ class PlayScene extends Phaser.Scene {
             let bx = cx + (i / 2) * 120 - 120;
             a(bx, 340, v, 20, arr[i+1]);
             let bgG = this.add.graphics({ x: bx, y: 420 }).setScale(8.5);
-            drawSprite(bgG, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0, { white: true });
+            dsp(bgG, sp('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0, { white: true });
             bgG.setVisible(false);
             c.add(bgG);
 
             let g = this.add.graphics({ x: bx, y: 420 }).setScale(8);
-            drawSprite(g, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0);
+            dsp(g, sp('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0);
             c.add(g); this.tBtns.push({fg: g, bg: bgG});
             a(bx, 480, 'BTN ' + (i / 2 + 1), 16, '#aaa');
           }
@@ -901,7 +901,7 @@ class PlayScene extends Phaser.Scene {
     // Crowd textures
     const tg = this.add.graphics();
     for (let i = 0; i < CROWD_SPRITES.length; i++) {
-      tg.clear(); drawSprite(tg, CROWD_SPRITES[i], 4, 5); tg.generateTexture('crowd' + i, 9, 10);
+      tg.clear(); dsp(tg, CROWD_SPRITES[i], 4, 5); tg.generateTexture('crowd' + i, 9, 10);
     }
     tg.destroy();
 
@@ -1080,6 +1080,14 @@ class PlayScene extends Phaser.Scene {
    * .jnr = jumpNearRope       .wt = walkTimer          .pt = punchTimer
    * .as = aiState             .at = aiTimer            .ajo = aiJumpOffset
    * .crj = canRopeJump
+   * 
+   * Bull states:
+   * BULL_C (14) = Charge
+   * BULL_B (15) = Bull Rebound
+   * BULL_R (16) = Bull Run (after rebound)
+   * 
+   * sp: parseSprite
+   * dsp: drawSprite
    */
 
   createPlayer(num, charName, x, y, color) {
@@ -1168,7 +1176,7 @@ class PlayScene extends Phaser.Scene {
       const r = this.ring.ropes[side];
       r.amount = 0; r.target = 0; r.soundTimer = 0;
     }
-    this.updatePlayerVisuals(this.p1); this.updatePlayerVisuals(this.p2);
+    this.uPVisuals(this.p1); this.uPVisuals(this.p2);
     this.updateHUD();
 
     // Reset camera to center of ring
@@ -1191,16 +1199,16 @@ class PlayScene extends Phaser.Scene {
 
     // Sprites for 3, 2, 1
     const sprites = [
-      parseSprite('~5.3<4.4.3<1N4.3.2<1N1<1N4.3.2N1.1<1N4.6.1<1N4.^^^^^~', 12),
-      parseSprite('~3.5N4.2.1N5<1N3.2.2<2.2<1N3.7.1<1N3.6.2<1N3.5.2<1N4.4.2<1N5.3.2<1N3.1N2.2.3<5N2.2.7<1N2.~', 12),
-      parseSprite('~3.7N2.2.4<>7.1<2N2.6.2<1N3.4.3<2N3.5.4<1N2.2.1<4.2<1N2.2.2<2.3<1N2.2.7<1N2.3.3N>~', 12)
+      sp('~5.3<4.4.3<1N4.3.2<1N1<1N4.3.2N1.1<1N4.6.1<1N4.^^^^^~', 12),
+      sp('~3.5N4.2.1N5<1N3.2.2<2.2<1N3.7.1<1N3.6.2<1N3.5.2<1N4.4.2<1N5.3.2<1N3.1N2.2.3<5N2.2.7<1N2.~', 12),
+      sp('~3.7N2.2.4<>7.1<2N2.6.2<1N3.4.3<2N3.5.4<1N2.2.1<4.2<1N2.2.2<2.3<1N2.2.7<1N2.3.3N>~', 12)
     ];
 
     const gfx = this.add.graphics({ x: W / 2, y: H / 2 }).setScrollFactor(0).setDepth(2500);
 
     const drawNumber = (n) => {
       gfx.clear();
-      drawSprite(gfx, sprites[n - 1], 0, 0);
+      dsp(gfx, sprites[n - 1], 0, 0);
     };
 
     drawNumber(step);
@@ -1230,7 +1238,8 @@ class PlayScene extends Phaser.Scene {
     this.tweens.add({ targets: gfx, scale: 12, alpha: 0, duration: 800, onComplete: nextStep });
   }
 
-  updatePlayerVisuals(p) {
+  // updatePlayerVisuals
+  uPVisuals(p) {
     // For carried players, position is based on carrier
     let drawX = p.x, drawY = p.y;
     if (p.st === ST.CARRY && p.carriedBy) {
@@ -1255,12 +1264,12 @@ class PlayScene extends Phaser.Scene {
     }
 
     let isWalking = false;
-    if (p.st === ST.WALK || p.st === ST.BULL_CHARGE || p.st === ST.BULL_REBOUND || p.st === ST.BULL_BOUNCE) {
+    if (p.st === ST.WALK || p.st === ST.BULL_C || p.st === ST.BULL_R || p.st === ST.BULL_B) {
       isWalking = true;
       let spdMod = 1;
-      if (p.st === ST.BULL_CHARGE) spdMod = 1.5;
-      if (p.st === ST.BULL_REBOUND) spdMod = 2.0;
-      if (p.st === ST.BULL_BOUNCE) spdMod = 1.0;
+      if (p.st === ST.BULL_C) spdMod = 1.5;
+      if (p.st === ST.BULL_R) spdMod = 2.0;
+      if (p.st === ST.BULL_B) spdMod = 1.0;
       p.wt = (p.wt || 0) + (this.game.loop.delta / 1000) * spdMod;
       drawY += Math.abs(Math.sin(p.wt * 15)) * -6; // vertical bob
     } else {
@@ -1293,7 +1302,7 @@ class PlayScene extends Phaser.Scene {
 
     p.body.clear();
     if (p.sprites && p.sprites[frame] && p.sprites[frame].length > 0) {
-      drawSprite(p.body, p.sprites[frame], 0, 0, { shadow: true });
+      dsp(p.body, p.sprites[frame], 0, 0, { shadow: true });
     } else {
       // Fallback: draw rectangles manually onto the graphics object
       let fillC = p.color;
@@ -1354,7 +1363,7 @@ class PlayScene extends Phaser.Scene {
       const fraction = (p.vy - p.ivy) / (-2 * p.ivy);
       p.body.setAngle(fraction * -360);
     }
-    else if (p.st === ST.BULL_CHARGE || p.st === ST.BULL_REBOUND || p.st === ST.BULL_BOUNCE) {
+    else if (p.st === ST.BULL_C || p.st === ST.BULL_R || p.st === ST.BULL_B) {
       p.body.setAngle((15 + Math.sin(p.wt * 15) * 2) * p.f);
     }
     else { p.body.setAngle(isWalking ? Math.sin(p.wt * 15) * 2 * p.f : 0); }
@@ -1794,8 +1803,8 @@ class PlayScene extends Phaser.Scene {
       return;
     }
 
-    if (p.st === ST.BULL_CHARGE || p.st === ST.BULL_REBOUND) {
-      const spd = p.st === ST.BULL_CHARGE ? P.walkSpd * 1.5 : P.walkSpd * 2.5;
+    if (p.st === ST.BULL_C || p.st === ST.BULL_R) {
+      const spd = p.st === ST.BULL_C ? P.walkSpd * 1.5 : P.walkSpd * 2.5;
       p.vx = p.f * spd;
       p.vy = 0;
       p.x += p.vx;
@@ -1809,7 +1818,7 @@ class PlayScene extends Phaser.Scene {
         let hitboxRange = isPunching ? 72 : 40;
 
         if (Math.abs(p.sx - opp.sx) < hitboxRange && Math.abs(p.sy - opp.y) < 40) {
-          if (opp.st === ST.BULL_CHARGE || opp.st === ST.BULL_REBOUND) {
+          if (opp.st === ST.BULL_C || opp.st === ST.BULL_R) {
             // Dash Clash!
             p.st = ST.IDLE;
             opp.st = ST.IDLE;
@@ -1821,7 +1830,7 @@ class PlayScene extends Phaser.Scene {
             return;
           }
 
-          const isRebound = p.st === ST.BULL_REBOUND;
+          const isRebound = p.st === ST.BULL_R;
           const dmg = isRebound ? 20 : 2;
           const kb = isRebound ? P.tackleKb : P.punchKb * 0.5;
 
@@ -1865,9 +1874,9 @@ class PlayScene extends Phaser.Scene {
       if (p.x <= minX && p.f === -1) { hitRope = true; p.x = minX; }
       else if (p.x >= maxX && p.f === 1) { hitRope = true; p.x = maxX; }
 
-      const maxDist = p.st === ST.BULL_CHARGE ? 300 : 450;
-      if (hitRope && p.st === ST.BULL_CHARGE) {
-        p.st = ST.BULL_BOUNCE;
+      const maxDist = p.st === ST.BULL_C ? 300 : 450;
+      if (hitRope && p.st === ST.BULL_C) {
+        p.st = ST.BULL_B;
         p.bt = 0.5;
         p.f *= -1; // Immediately point in the rebound direction
         p.rs = p.f === 1 ? -1 : 1;
@@ -1879,7 +1888,7 @@ class PlayScene extends Phaser.Scene {
       return;
     }
 
-    if (p.st === ST.BULL_BOUNCE) {
+    if (p.st === ST.BULL_B) {
       p.vx = 0; p.vy = 0;
       p.bt -= dt;
 
@@ -1896,7 +1905,7 @@ class PlayScene extends Phaser.Scene {
       p.sx = p.x;
 
       if (p.bt <= 0) {
-        p.st = ST.BULL_REBOUND;
+        p.st = ST.BULL_R;
         p.bd = 0;
         p.hb = false;
         snd('jump');
@@ -1981,7 +1990,7 @@ class PlayScene extends Phaser.Scene {
             snd('slam');
             particles(s, opp.x, opp.y, C.txt, 10);
             shake(s, 0.015, 0.15); // Extra impact
-          } else if (opp.st === ST.BULL_REBOUND) {
+          } else if (opp.st === ST.BULL_R) {
             // Countered the full-velocity bull charge!
             damage(s, opp, P.punchDmg, p.f * P.punchKb * 2);
             opp.st = ST.DOWN;
@@ -2007,7 +2016,7 @@ class PlayScene extends Phaser.Scene {
         }
       }
     if (inputs.btn2 && (p.st === ST.IDLE || p.st === ST.WALK || p.st === ST.RUN)) {
-      p.st = ST.BULL_CHARGE;
+      p.st = ST.BULL_C;
       p.bd = 0;
       p.hb = false;
       if (inputs.left) p.f = -1;
@@ -2076,7 +2085,7 @@ class PlayScene extends Phaser.Scene {
     }
 
     const oppInAir = (opp.st === ST.JUMP || opp.st === ST.FLY || opp.st === ST.ONROPE);
-    const canAct = [1,2,3,12,14,15,16].includes(p.st); // [ST.IDLE, ST.WALK, ST.RUN, ST.WIN, ST.BULL_CHARGE, ST.BULL_BOUNCE, ST.BULL_REBOUND]
+    const canAct = [1,2,3,12,14,15,16].includes(p.st); // [ST.IDLE, ST.WALK, ST.RUN, ST.WIN, ST.BULL_C, ST.BULL_B, ST.BULL_R]
 
     if (p.at <= 0) {
       p.at = RndF(0.2, 0.6);
@@ -2107,7 +2116,7 @@ class PlayScene extends Phaser.Scene {
            p.as = 'teabag';
            p.at = 1.0;
         } else {
-           p.as = 'bull_charge';
+           p.as = 'bull_c';
            p.at = 1.0;
         }
       } else if (opp.st === ST.HIT || opp.st === ST.PUNCH) {
@@ -2131,7 +2140,7 @@ class PlayScene extends Phaser.Scene {
         else p.as = 'circle';
       } else {
         const r = Math.random();
-        if (r < 0.15) p.as = 'bull_charge';
+        if (r < 0.15) p.as = 'bull_c';
         else if (r < 0.15 + personality.jumpChance * 2) p.as = 'rope_bounce';
         else p.as = Math.random() < personality.runChance ? 'approach' : 'wait';
       }
@@ -2268,8 +2277,8 @@ class PlayScene extends Phaser.Scene {
         }
         break;
 
-      case 'bull_charge':
-        if (![14,15,16].includes(p.st)) { // ![ST.BULL_CHARGE, ST.BULL_BOUNCE, ST.BULL_REBOUND]
+      case 'bull_c':
+        if (![14,15,16].includes(p.st)) { // ![ST.BULL_C, ST.BULL_B, ST.BULL_R]
           inputs.btn2 = true;
           inputs.left = dx < 0; inputs.right = dx > 0;
           p.as = 'wait'; p.at = 1.0;
@@ -2348,9 +2357,9 @@ class PlayScene extends Phaser.Scene {
       this.tA.forEach((ta, p) => {
         let s = p ? this.p2.sprites : this.p1.sprites;
         ta.clear(); this.tA2[p].clear();
-        drawSprite(ta, s[tm%500<250?'Punch':'Walk'], -24, 0);
-        drawSprite(this.tA2[p], s.Walk, 0, Math.abs(Math.sin(tm/50))*-3);
-        drawSprite(ta, s.Jump, 24, Math.abs(Math.sin(tm/150))*-10);
+        dsp(ta, s[tm%500<250?'Punch':'Walk'], -24, 0);
+        dsp(this.tA2[p], s.Walk, 0, Math.abs(Math.sin(tm/50))*-3);
+        dsp(ta, s.Jump, 24, Math.abs(Math.sin(tm/150))*-10);
       });
     }
 
@@ -2379,8 +2388,8 @@ class PlayScene extends Phaser.Scene {
     }
 
     // Visuals
-    this.updatePlayerVisuals(this.p1);
-    this.updatePlayerVisuals(this.p2);
+    this.uPVisuals(this.p1);
+    this.uPVisuals(this.p2);
     this.updateHUD();
     this.updateRopes();
     this.updateCrowd();
