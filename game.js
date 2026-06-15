@@ -92,7 +92,7 @@ function drawSprite(gfx, sData, x, y, opt = {}) {
     for (let c = 0; c < sData[r].length; c++) {
       const col = COLOR_MAP[sData[r][c]];
       if (col != null) {
-        gfx.fillStyle(col, 1);
+        gfx.fillStyle(opt.white ? 0xCCC77C : col, 1);
         gfx.fillRect(x - cx + c | 0, y - cy + r | 0, 1, 1);
       }
     }
@@ -811,22 +811,36 @@ class PlayScene extends Phaser.Scene {
       this.rs = true;
       let c = this.tG = this.add.container(0, 0).setDepth(3e3).setScrollFactor(0);
       c.add(this.add.rectangle(400, 300, 800, 600, 0, .8));
-      let a = (x, y, s, z, k) => c.add(this.add.text(x, y, s, t(z, k||'#fff', 1)).setOrigin(.5));
+      let a = (x, y, s, z, k) => { let txt = this.add.text(x, y, s, t(z, k||'#fff', 1)).setOrigin(.5); c.add(txt); return txt; };
       a(400, 60, 'CONTROLES', 32);
       a(400, 100, 'JOYSTICK: MOVER', 18, '#aaa');
-      this.tA = this.add.graphics({x: 400, y: 230}).setScale(5);
-      this.tA2 = this.add.graphics({x: 400, y: 230}).setScale(5).setRotation(.2);
-      c.add(this.tA); c.add(this.tA2);
-      a(280, 340, 'GOLPE', 20, '#f00');
-      a(400, 340, 'EMBESTIDA', 20, '#48f');
-      a(520, 340, 'SALTAR', 20, '#2dc243');
-      this.tBtns = [0,1,2].map(i => {
-        let g = this.add.graphics({ x: 280+i*120, y: 420 }).setScale(8);
-        drawSprite(g, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0);
-        c.add(g); return g;
+      this.tBtns = []; this.tA = []; this.tA2 = [];
+      let modes = this.mode === '2p' ? [0, 1] : [0];
+      modes.forEach(p => {
+        let cx = this.mode === '2p' ? (p ? 600 : 200) : 400;
+        let scale = p ? -5 : 5;
+        let ta = this.add.graphics({x: cx, y: 230}).setScale(scale, 5);
+        let ta2 = this.add.graphics({x: cx, y: 230}).setScale(scale, 5).setRotation(.2);
+        c.add(ta); c.add(ta2);
+        this.tA.push(ta); this.tA2.push(ta2);
+
+        ['GOLPE','#f00','EMBESTIDA','#48f','SALTAR','#2dc243'].forEach((v, i, arr) => {
+          if (i % 2 === 0) {
+            let bx = cx + (i / 2) * 120 - 120;
+            a(bx, 340, v, 20, arr[i+1]);
+            let bgG = this.add.graphics({ x: bx, y: 420 }).setScale(8.5);
+            drawSprite(bgG, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0, { white: true });
+            bgG.setVisible(false);
+            c.add(bgG);
+
+            let g = this.add.graphics({ x: bx, y: 420 }).setScale(8);
+            drawSprite(g, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0);
+            c.add(g); this.tBtns.push({fg: g, bg: bgG});
+            a(bx, 480, 'BTN ' + (i / 2 + 1), 16, '#aaa');
+          }
+        });
       });
-      [280,400,520].map((x,i)=>a(x,480,'BTN '+(i+1),16,'#aaa'));
-      a(400, 540, 'PRESIONA START PARA INICIAR', 20);
+      this.tStartText = a(400, 540, 'PRESIONA START PARA INICIAR', 20);
     } else {
       this.showFightText();
       snd('bell');
@@ -2274,9 +2288,8 @@ class PlayScene extends Phaser.Scene {
         if (p.st === ST.IDLE) {
           p.as = 'approach'; // Landed
         } else if (p.st === ST.JUMP || p.st === ST.FLY || p.st === ST.ONROPE) {
-          if (p.st === ST.ONROPE) {
-            // Smart rope jump: hang for a brief moment to aim, then launch!
-            if (p.at > 0.15) p.at = 0.15;
+          if (p.st === 13) {
+            if (p.at <= 0) p.at = 0.3;
             inputs.btn3 = (p.at <= 0.05);
           } else if (p.st === ST.JUMP) {
             // In the air, steer towards opponent with an offset so we don't always land perfectly on them
@@ -2319,19 +2332,26 @@ class PlayScene extends Phaser.Scene {
         snd('bell');
       }
       if (this.canPause) {
-        ['P1_1','P1_2','P1_3'].forEach((k, i) => {
-          let h = isHeld(k) || isHeld('P2_'+(i+1));
-          this.tBtns[i].setScale(h ? 10 : 8);
-          if (isPressed(k) || isPressed('P2_'+(i+1))) snd('punch');
+        let keys = this.mode === '2p' ? ['P1_1','P1_2','P1_3','P2_1','P2_2','P2_3'] : ['P1_1','P1_2','P1_3'];
+        keys.forEach((k, i) => {
+          let held = isHeld(k);
+          this.tBtns[i].fg.setScale(held ? 10 : 8);
+          this.tBtns[i].bg.setScale(held ? 11 : 8.5);
+          this.tBtns[i].bg.setVisible(held);
+          if (isPressed(k)) snd('punch');
         });
       }
+      this.tStartText.setAlpha(0.65 + 0.4 * Math.sin(this.time.now / 300));
       clearPressed();
-      
-      let m = this.time.now, s = this.p1.sprites;
-      this.tA.clear(); this.tA2.clear();
-      drawSprite(this.tA, s[m%500<250?'Punch':'Walk'], -24, 0);
-      drawSprite(this.tA2, s.Walk, 0, Math.abs(Math.sin(m/50))*-3);
-      drawSprite(this.tA, s.Jump, 24, Math.abs(Math.sin(m/150))*-10);
+
+      let tm = this.time.now;
+      this.tA.forEach((ta, p) => {
+        let s = p ? this.p2.sprites : this.p1.sprites;
+        ta.clear(); this.tA2[p].clear();
+        drawSprite(ta, s[tm%500<250?'Punch':'Walk'], -24, 0);
+        drawSprite(this.tA2[p], s.Walk, 0, Math.abs(Math.sin(tm/50))*-3);
+        drawSprite(ta, s.Jump, 24, Math.abs(Math.sin(tm/150))*-10);
+      });
     }
 
     let dt = this.game.loop.delta / 1000;
@@ -2494,11 +2514,11 @@ class PauseScene extends Phaser.Scene {
       const txt = this.add.text(W / 2, y, l, t(20, '#ffffff')).setOrigin(0.5);
       this.items.push({ bg, txt });
     });
-    
+
     this.sel = 0;
     this.us();
   }
-  
+
   us() {
     this.items.forEach((o, i) => {
       o.bg.setFillStyle(i === this.sel ? 0xf7bb1b : 0x1a1e05);
