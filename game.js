@@ -7,7 +7,7 @@ const C = {
   bg: 0x1a0a2e, crowd: 0x2d1b4e, apron: 0x4a0000, mat: 0x5664c7,
   rope1: 0x9a4360, rope2: 0xccd0fc, rope3: 0x4A8764,
   p1: 0xff0000, p2: 0x0000ff, txt: 0xffffff, shadow: 0x000000,
-  bar: 0x00ff00, timer: 0xffff00,
+  bar: 0x2dc243, timer: 0xf7bb1b,
 };
 
 // =============================================================================
@@ -508,7 +508,7 @@ class MenuScene extends Phaser.Scene {
     drawCityBackground(this, true);
 
     // Titles
-    const title = this.add.text(W / 2, 100, 'LUCHADORES', t(48, '#e1ff00', 1)).setOrigin(0.5).setDepth(10);
+    const title = this.add.text(W / 2, 100, 'LUCHADORES', t(48, '#f7bb1b', 1)).setOrigin(0.5).setDepth(10);
     this.add.text(W / 2, 150, 'Platanus Hack 26 - CDMX', t(18, '#ffffff')).setOrigin(0.5).setDepth(10);
     this.tweens.add({ targets: title, scale: 1.05, duration: 1000, yoyo: true, repeat: -1 });
 
@@ -533,7 +533,7 @@ class MenuScene extends Phaser.Scene {
 
   updateMenu() {
     for (let i = 0; i < this.items.length; i++) {
-      this.items[i].bg.setFillStyle(i === this.cursor ? 0xe1ff00 : 0x1a1e05);
+      this.items[i].bg.setFillStyle(i === this.cursor ? 0xf7bb1b : 0x1a1e05);
       this.items[i].txt.setColor(i === this.cursor ? '#000000' : '#ffffff');
     }
   }
@@ -588,8 +588,8 @@ class CharSelectScene extends Phaser.Scene {
     this.p2Label = this.add.text(W - 115, 120, this.mode === '2p' ? 'P2' : 'CPU', t(20, '#ff4444', 1)).setOrigin(0.5).setDepth(10);
     this.p1Name = this.add.text(115, 410, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
     this.p2Name = this.add.text(W - 115, 410, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
-    this.p1Ready = this.add.text(115, 440, 'LISTO', t(16, '#00ff00', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
-    this.p2Ready = this.add.text(W - 115, 440, 'LISTO', t(16, '#00ff00', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
+    this.p1Ready = this.add.text(115, 440, 'LISTO', t(16, '#2dc243', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
+    this.p2Ready = this.add.text(W - 115, 440, 'LISTO', t(16, '#2dc243', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
 
     this.hintTxt = this.add.text(W / 2, H - 30, 'JOYSTICK PARA MOVER · BTN1 O START ELEGIR', t(12, '#6f7a4a')).setOrigin(0.5).setDepth(10);
 
@@ -969,7 +969,7 @@ class PlayScene extends Phaser.Scene {
     // Apron stripes
     for (let i = 0; i < 3; i++) {
       const y = G.frontY + 10 + i * 15;
-      fg.fillStyle(0xffcc00, 0.6);
+      fg.fillStyle(0xf7bb1b, 0.6);
       fg.fillRect(G.frontLX, y, G.frontW, 4);
     }
 
@@ -1097,12 +1097,12 @@ class PlayScene extends Phaser.Scene {
 
     p.chargeBarBg = this.add.rectangle(x, y - P.size / 2 - 25, P.size, 6, 0x000000);
     p.chargeBarBg.setStrokeStyle(2, 0xffffff, 0.5);
-    p.chargeBar = this.add.rectangle(x - P.size / 2, y - P.size / 2 - 25, 0, 4, 0xffff00);
+    p.chargeBar = this.add.rectangle(x - P.size / 2, y - P.size / 2 - 25, 0, 4, 0xf7bb1b);
     p.chargeBar.setOrigin(0, 0.5);
     p.chargeBar.setVisible(false);
     p.chargeBarBg.setVisible(false);
 
-    p.comboTxt = this.add.text(x, y, '', t(14, '#e1ff00', 1)).setOrigin(0.5);
+    p.comboTxt = this.add.text(x, y, '', t(14, '#f7bb1b', 1)).setOrigin(0.5);
     p.comboTxt.setVisible(false);
 
     return p;
@@ -1122,9 +1122,9 @@ class PlayScene extends Phaser.Scene {
 
     h.winContainer = this.add.container(0, H / 2).setVisible(false);
     h.winTitle = this.add.text(0, -110, '.', t(24, '#fff')).setOrigin(0.5);
-    h.winName = this.add.text(0, -70, 'NAME', t(48, '#e1ff00', 1)).setOrigin(0.5);
-    h.winSubtitle = this.add.text(0, -30, 'GANADOR DE LA PELEA', t(16, '#fff')).setOrigin(0.5).setVisible(false);
-    h.winPrompt = this.add.text(0, -H / 2, 'PRESIONA CUALQUIER BOTÓN PARA CONTINUAR', t(24, '#ffff00', 1)).setOrigin(0.5).setStroke('#000', 6).setVisible(false);
+    h.winName = this.add.text(0, -70, 'NAME', t(48, '#f7bb1b', 1)).setOrigin(0.5);
+    h.winSubtitle = this.add.text(0, -30, 'FIN DE LA PELEA', t(16, '#fff')).setOrigin(0.5).setVisible(false);
+    h.winPrompt = this.add.text(0, -H / 2, 'PRESIONA CUALQUIER BOTÓN PARA CONTINUAR', t(24, '#f7bb1b', 1)).setOrigin(0.5).setStroke('#000', 6).setVisible(false);
     h.winContainer.add([this.add.rectangle(0, 0, W, 150, 0, 0.5).setOrigin(0.5, 1), h.winTitle, h.winName, h.winSubtitle, h.winPrompt]);
     h.container.add([h.hp1Bg, h.hp1, h.p1Name, h.hp2Bg, h.hp2, h.p2Name, h.winContainer]);
   }
@@ -1178,7 +1178,7 @@ class PlayScene extends Phaser.Scene {
     const winBg = this.add.rectangle(W / 2, H, W, 150, 0x000000, 0.5).setOrigin(0.5, 1).setScrollFactor(0).setDepth(2400);
 
     let caidaText = ['PRIMERA CAÍDA', 'SEGUNDA CAÍDA', 'TERCERA CAÍDA'][this.round - 1] || 'CAÍDA ' + this.round;
-    const title = this.add.text(W / 2, H - 110, caidaText, t(32, '#ffff00', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
+    const title = this.add.text(W / 2, H - 110, caidaText, t(32, '#f7bb1b', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
     const subtitle = this.add.text(W / 2, H - 70, 'GANA EL MEJOR DE 3 CAÍDAS', t(16, '#ffffff', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
 
     const txt = this.add.text(W / 2, H / 2, '¡A PELEAR!', t(64, '#f7bb1b', 1)).setOrigin(0.5).setStroke('#915f01', 8).setScrollFactor(0).setDepth(2500);
@@ -2390,7 +2390,7 @@ class PlayScene extends Phaser.Scene {
 
     if (this.me) {
       if (this.matchIsOver && this.winPhase >= 1 && RndF(0,1) < .3) {
-        let p = this.add.rectangle(this.cameras.main.scrollX + RndF(0,W), this.cameras.main.scrollY - 20, 6, 8, [0xff0000,0xff00,0xff,0xffff00,0xff00ff][Rnd(0,4)]).setDepth(3e3);
+        let p = this.add.rectangle(this.cameras.main.scrollX + RndF(0,W), this.cameras.main.scrollY - 20, 6, 8, [0xff0000,0x2dc243,0xff,0xf7bb1b,0xff00ff][Rnd(0,4)]).setDepth(3e3);
         this.tweens.add({targets: p, y: p.y + H + 40, angle: Rnd(-720,720), x: p.x + Rnd(-100,100), duration: Rnd(2e3,3e3), onComplete: () => p.destroy()});
       }
 
@@ -2469,8 +2469,8 @@ class PauseScene extends Phaser.Scene {
   constructor() { super({ key: 'PauseScene', active: false }); }
   create() {
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7);
-    this.add.rectangle(W / 2, H / 2, 400, 250, 0x000000).setStrokeStyle(6, 0xffff00);
-    this.add.text(W / 2, H / 2 - 60, 'PAUSADO', t(48, '#ffff00', 1)).setOrigin(0.5);
+    this.add.rectangle(W / 2, H / 2, 400, 250, 0x000000);
+    this.add.text(W / 2, H / 2 - 60, 'PAUSADO', t(48, '#f7bb1b', 1)).setOrigin(0.5);
 
     const labels = ['CONTINUAR', 'VOLVER AL MENÚ'];
     this.items = [];
@@ -2487,7 +2487,7 @@ class PauseScene extends Phaser.Scene {
   
   us() {
     this.items.forEach((o, i) => {
-      o.bg.setFillStyle(i === this.sel ? 0xe1ff00 : 0x1a1e05);
+      o.bg.setFillStyle(i === this.sel ? 0xf7bb1b : 0x1a1e05);
       o.txt.setColor(i === this.sel ? '#000000' : '#ffffff');
     });
   }
