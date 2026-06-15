@@ -353,7 +353,7 @@ function drawCityBackground(scene, includeAngel = true) {
   }
 
   // Overlay to dim background slightly behind text
-  scene.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.4).setDepth(6);
+  scene.add.rectangle(W / 2, H / 2, W, H, 0, 0.4).setDepth(6);
 
   // Coliseum searchlight beams (Mexican flag colors)
   scene.beamGfx = scene.add.graphics();
@@ -446,7 +446,7 @@ function drawCityBackground(scene, includeAngel = true) {
   }
 
   // Overlay to dim background slightly behind text
-  scene.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.4).setDepth(6);
+  scene.add.rectangle(W / 2, H / 2, W, H, 0, 0.4).setDepth(6);
 
   // Coliseum searchlight beams (Mexican flag colors)
   scene.beamGfx = scene.add.graphics();
@@ -1084,7 +1084,7 @@ class PlayScene extends Phaser.Scene {
     p.shad = this.add.ellipse(x, y, P.size, P.size / 2, C.shadow, 0.5);
     p.shad.setVisible(false);
 
-    p.chargeBarBg = this.add.rectangle(x, y - P.size / 2 - 25, P.size, 6, 0x000000);
+    p.chargeBarBg = this.add.rectangle(x, y - P.size / 2 - 25, P.size, 6, 0);
     p.chargeBarBg.setStrokeStyle(2, 0xffffff, 0.5);
     p.chargeBar = this.add.rectangle(x - P.size / 2, y - P.size / 2 - 25, 0, 4, 0xf7bb1b);
     p.chargeBar.setOrigin(0, 0.5);
@@ -1164,7 +1164,7 @@ class PlayScene extends Phaser.Scene {
     let step = 3;
 
     // Create the background and text container for the bottom
-    const winBg = this.add.rectangle(W / 2, H, W, 150, 0x000000, 0.5).setOrigin(0.5, 1).setScrollFactor(0).setDepth(2400);
+    const winBg = this.add.rectangle(W / 2, H, W, 150, 0, 0.5).setOrigin(0.5, 1).setScrollFactor(0).setDepth(2400);
 
     let caidaText = ['PRIMERA CAÍDA', 'SEGUNDA CAÍDA', 'TERCERA CAÍDA'][this.round - 1] || 'CAÍDA ' + this.round;
     const title = this.add.text(W / 2, H - 110, caidaText, t(32, '#f7bb1b', 1)).setOrigin(0.5).setScrollFactor(0).setDepth(2500);
@@ -1202,8 +1202,8 @@ class PlayScene extends Phaser.Scene {
         txt.setVisible(true);
         txt.setScale(1).setAlpha(1);
         this.rs = false;
-        this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800, onComplete: nextStep });
-        this.tweens.add({ targets: [title, subtitle, winBg], alpha: 0, duration: 800 });
+        this.tweens.add({ targets: txt, scale: 1.5, alpha: 0, duration: 800 });
+        this.tweens.add({ targets: [title, subtitle, winBg], alpha: 0, duration: 800, delay: 1e3, onComplete: nextStep });
       } else {
         txt.destroy();
         title.destroy();
@@ -1755,9 +1755,9 @@ class PlayScene extends Phaser.Scene {
         if (!p.fd && !p.ra && Math.hypot(p.sx - opp.x, p.sy - opp.y) < P.size * 1.5 && ![6,7,8,10,11].includes(opp.st)) {
           damage(s, opp, P.punchDmg * 2, p.f * P.punchKb);
           opp.st = 6; opp.hitTimer = 0.2;
-          shake(s, 0.02, 0.2); snd('punch'); particles(s, opp.x, opp.y, 0xffffff, 10);
+          shake(s, 0.02, 0.2); snd('punch'); particles(s, opp.x, opp.y, C.txt, 10);
         } else {
-          snd('slam'); particles(s, p.x, p.y, 0xffffff, 6); shake(s, 0.005, 0.1);
+          snd('slam'); particles(s, p.x, p.y, C.txt, 6); shake(s, 0.005, 0.1);
         }
         p.fd = p.ra = false; p.st = 1;
       }
@@ -1772,7 +1772,7 @@ class PlayScene extends Phaser.Scene {
           p.fd = false;
           p.ra = false;
           shake(s, 0.012, 0.15);
-          snd('slam'); particles(s, opp.x, opp.y, 0xffffff, 8);
+          snd('slam'); particles(s, opp.x, opp.y, C.txt, 8);
         }
       }
       return;
@@ -1800,7 +1800,7 @@ class PlayScene extends Phaser.Scene {
             p.hb = true;
             opp.hb = true;
             snd('punch');
-            particles(s, p.x + (opp.x - p.x)/2, p.y, 0xffffff, 15);
+            particles(s, p.x + (opp.x - p.x)/2, p.y, C.txt, 15);
             shake(s, 0.02, 0.15);
             return;
           }
@@ -1824,7 +1824,7 @@ class PlayScene extends Phaser.Scene {
 
           p.hb = true;
 
-          particles(s, opp.x, opp.y, 0xffffff, isRebound ? 12 : 5);
+          particles(s, opp.x, opp.y, C.txt, isRebound ? 12 : 5);
           shake(s, isRebound ? 0.02 : 0.01, 0.15);
 
           if (isPunching) {
@@ -1963,7 +1963,7 @@ class PlayScene extends Phaser.Scene {
             opp.y = opp.sy;
             p.combo = 0;
             snd('slam');
-            particles(s, opp.x, opp.y, 0xffffff, 10);
+            particles(s, opp.x, opp.y, C.txt, 10);
             shake(s, 0.015, 0.15); // Extra impact
           } else if (opp.st === ST.BULL_REBOUND) {
             // Countered the full-velocity bull charge!
@@ -1972,7 +1972,7 @@ class PlayScene extends Phaser.Scene {
             opp.dtm = P.downTime / 1000;
             p.combo = 0;
             snd('slam');
-            particles(s, opp.x, opp.y, 0xffffff, 10);
+            particles(s, opp.x, opp.y, C.txt, 10);
             shake(s, 0.015, 0.15); // Extra impact
           } else {
             damage(s, opp, P.punchDmg, p.f * P.punchKb);
@@ -2473,8 +2473,8 @@ class PlayScene extends Phaser.Scene {
 class PauseScene extends Phaser.Scene {
   constructor() { super({ key: 'PauseScene', active: false }); }
   create() {
-    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7);
-    this.add.rectangle(W / 2, H / 2, 400, 250, 0x000000);
+    this.add.rectangle(W / 2, H / 2, W, H, 0, 0.7);
+    this.add.rectangle(W / 2, H / 2, 400, 250, 0);
     this.add.text(W / 2, H / 2 - 60, 'PAUSADO', t(48, '#f7bb1b', 1)).setOrigin(0.5);
 
     const labels = ['CONTINUAR', 'VOLVER AL MENÚ'];
