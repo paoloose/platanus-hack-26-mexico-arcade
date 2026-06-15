@@ -833,9 +833,9 @@ class PlayScene extends Phaser.Scene {
       let tg = this.add.graphics({ x: 400, y: 420 }).setScale(8);
       [0,1,2].map(i => drawSprite(tg, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), i*15-15, 0));
       c.add(tg);
-      a(280, 480, 'BTN1', 16, '#aaa');
-      a(400, 480, 'BTN2', 16, '#aaa');
-      a(520, 480, 'BTN3', 16, '#aaa');
+      a(280, 480, 'BTN 1', 16, '#aaa');
+      a(400, 480, 'BTN 2', 16, '#aaa');
+      a(520, 480, 'BTN 3', 16, '#aaa');
       a(400, 540, 'PRESIONA UN BOTON PARA INICIAR', 20);
     } else {
       this.showFightText();
