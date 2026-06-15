@@ -820,11 +820,13 @@ class PlayScene extends Phaser.Scene {
       a(280, 340, 'GOLPE', 20, '#f00');
       a(400, 340, 'EMBESTIDA', 20, '#48f');
       a(520, 340, 'SALTAR', 20, '#2dc243');
-      let tg = this.add.graphics({ x: 400, y: 420 }).setScale(8);
-      [0,1,2].map(i => drawSprite(tg, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), i*15-15, 0));
-      c.add(tg);
+      this.tBtns = [0,1,2].map(i => {
+        let g = this.add.graphics({ x: 280+i*120, y: 420 }).setScale(8);
+        drawSprite(g, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), 0, 0);
+        c.add(g); return g;
+      });
       [280,400,520].map((x,i)=>a(x,480,'BTN '+(i+1),16,'#aaa'));
-      a(400, 540, 'PRESIONA UN BOTON PARA INICIAR', 20);
+      a(400, 540, 'PRESIONA START PARA INICIAR', 20);
     } else {
       this.showFightText();
       snd('bell');
@@ -1081,12 +1083,12 @@ class PlayScene extends Phaser.Scene {
     // Keep p.bodyInner reference null since we don't need a separate inner rectangle anymore
     p.bodyInner = null;
 
-    p.shad = this.add.ellipse(x, y, P.size, P.size / 2, C.shadow, 0.5);
+    p.shad = this.add.ellipse(x, y, 40, 20, C.shadow, 0.5);
     p.shad.setVisible(false);
 
-    p.chargeBarBg = this.add.rectangle(x, y - P.size / 2 - 25, P.size, 6, 0);
+    p.chargeBarBg = this.add.rectangle(x, y - 20 - 25, 40, 6, 0);
     p.chargeBarBg.setStrokeStyle(2, 0xffffff, 0.5);
-    p.chargeBar = this.add.rectangle(x - P.size / 2, y - P.size / 2 - 25, 0, 4, 0xf7bb1b);
+    p.chargeBar = this.add.rectangle(x - 20, y - 20 - 25, 0, 4, 0xf7bb1b);
     p.chargeBar.setOrigin(0, 0.5);
     p.chargeBar.setVisible(false);
     p.chargeBarBg.setVisible(false);
@@ -1219,7 +1221,7 @@ class PlayScene extends Phaser.Scene {
     let drawX = p.x, drawY = p.y;
     if (p.st === ST.CARRY && p.carriedBy) {
       drawX = p.carriedBy.x;
-      drawY = p.carriedBy.y - P.size * 0.5;
+      drawY = p.carriedBy.y - 20;
     }
 
     if (p.st === ST.HIT) {
@@ -1291,9 +1293,9 @@ class PlayScene extends Phaser.Scene {
       if (p.st === ST.KO) fillC = 0x888888;
 
       p.body.fillStyle(fillC, 1 * alphaMultiplier);
-      p.body.fillRect(-P.size / 2, -P.size / 2, P.size, P.size);
+      p.body.fillRect(-20, -20, 40, 40);
       p.body.lineStyle(3, 0xffffff, 0.8 * alphaMultiplier);
-      p.body.strokeRect(-P.size / 2, -P.size / 2, P.size, P.size);
+      p.body.strokeRect(-20, -20, 40, 40);
     }
 
     const baseDepth = (p.st === ST.JUMP || p.st === ST.FLY || p.st === ST.ONROPE || p.st === ST.SUPLEX_A || p.st === ST.SUPLEX_R || p.st === ST.WIN) ? p.sy : p.y;
@@ -1302,9 +1304,9 @@ class PlayScene extends Phaser.Scene {
     p.chargeBarBg.setDepth(baseDepth + 0.2);
     p.chargeBar.setDepth(baseDepth + 0.3);
 
-    p.chargeBarBg.setPosition(drawX, drawY - P.size / 2 - 25);
-    p.chargeBar.setPosition(drawX - P.size / 2, drawY - P.size / 2 - 25);
-    const cw = (p.charge / P.chargeTime) * P.size;
+    p.chargeBarBg.setPosition(drawX, drawY - 20 - 25);
+    p.chargeBar.setPosition(drawX - 20, drawY - 20 - 25);
+    const cw = (p.charge / P.chargeTime) * 40;
     p.chargeBar.setSize(cw, 4);
 
     if (p.st === ST.JUMP || p.st === ST.FLY || p.st === ST.SUPLEX_A || p.st === ST.SUPLEX_R || p.st === ST.WIN) {
@@ -1345,7 +1347,7 @@ class PlayScene extends Phaser.Scene {
 
     if (p.comboTxt) {
       p.comboTxt.setDepth(baseDepth + 0.4);
-      if (p.combo > 1 && !this.me) { p.comboTxt.setPosition(p.x, p.y - P.size / 2 - 50); p.comboTxt.setText('¡x' + p.combo + ' COMBO!'); p.comboTxt.setVisible(true); }
+      if (p.combo > 1 && !this.me) { p.comboTxt.setPosition(p.x, p.y - 20 - 50); p.comboTxt.setText('¡x' + p.combo + ' COMBO!'); p.comboTxt.setVisible(true); }
       else { p.comboTxt.setVisible(false); }
     }
 
@@ -1388,8 +1390,8 @@ class PlayScene extends Phaser.Scene {
     // Bottom (front) keeps full padding since it already looks correct.
     const minX = bounds.left + 2;
     const maxX = bounds.right - 2;
-    const minY = G.backY - P.size / 3;
-    const maxY = G.frontY - P.size / 2;
+    const minY = G.backY - 13;
+    const maxY = G.frontY - 20;
 
     // Check each rope side
     const ropes = this.ring.ropes;
@@ -1548,14 +1550,14 @@ class PlayScene extends Phaser.Scene {
       if (p.spt <= LIFT_TIME && p.carry) {
         // Lift & slam
         const opp = p.carry;
-        const radius = P.size * 0.8;
+        const radius = 32;
 
         // Attacker stays mostly grounded until a small hop at the very end
         const jumpOffset = Math.pow(progress, 4) * 20;
 
         // Pivot around the feet instead of the center
         const theta = -Math.PI / 2 * p.f * progress; // 0 to -90 degrees
-        const feetR = P.size / 2;
+        const feetR = 20;
         p.x = p.sx + feetR * Math.sin(theta);
         p.y = p.sy + feetR * (1 - Math.cos(theta)) - jumpOffset;
 
@@ -1654,11 +1656,11 @@ class PlayScene extends Phaser.Scene {
       const bounds = s.getRingBounds(p.sy);
       const minX = bounds.left + 5;
       const maxX = bounds.right - 5;
-      const minY = G.backY - P.size / 3 + 5;
-      const maxY = G.frontY - P.size / 2 - 5;
+      const minY = G.backY - 13 + 5;
+      const maxY = G.frontY - 20 - 5;
 
       const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
-      if (shadowDist < P.size * 1.5 && Math.abs(p.jh - P.size) < P.size) {
+      if (shadowDist < 60 && Math.abs(p.jh - 40) < 40) {
         p.flyDist = 0; // Drop straight down if passing over opponent
       }
 
@@ -1695,8 +1697,8 @@ class PlayScene extends Phaser.Scene {
       const bounds = s.getRingBounds(p.sy);
       const minX = bounds.left + 5;
       const maxX = bounds.right - 5;
-      const minY = G.backY - P.size / 3 + 5;
-      const maxY = G.frontY - P.size / 2 - 5;
+      const minY = G.backY - 13 + 5;
+      const maxY = G.frontY - 20 - 5;
 
       let bounced = false;
       if (!p.jnr) {
@@ -1752,7 +1754,7 @@ class PlayScene extends Phaser.Scene {
 
       if (p.jh <= 0) {
         p.jh = p.vy = 0; p.y = p.sy;
-        if (!p.fd && !p.ra && Math.hypot(p.sx - opp.x, p.sy - opp.y) < P.size * 1.5 && ![6,7,8,10,11].includes(opp.st)) {
+        if (!p.fd && !p.ra && Math.hypot(p.sx - opp.x, p.sy - opp.y) < 60 && ![6,7,8,10,11].includes(opp.st)) {
           damage(s, opp, P.punchDmg * 2, p.f * P.punchKb);
           opp.st = 6; opp.hitTimer = 0.2;
           shake(s, 0.02, 0.2); snd('punch'); particles(s, opp.x, opp.y, C.txt, 10);
@@ -1764,7 +1766,7 @@ class PlayScene extends Phaser.Scene {
 
       if ((inputs.btn1 || p.fd) && p.vy > 0 && p.jh < 50) {
         const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
-        if (shadowDist < P.size * 1.5) {
+        if (shadowDist < 60) {
           const dmg = p.ra ? 15 : P.slamDmg;
           const kb = p.ra ? P.tackleKb * 1.5 : P.tackleKb;
           damage(s, opp, dmg, p.f * kb);
@@ -1790,9 +1792,9 @@ class PlayScene extends Phaser.Scene {
 
       if (!p.hb && ![6,7,8,10,11].includes(opp.st)) { // ![ST.HIT, ST.DOWN, ST.KO, ST.SUPLEX_A, ST.SUPLEX_R]
         let isPunching = inputs.btn1;
-        let hitboxRange = isPunching ? P.size * 1.8 : P.size * 1.0;
+        let hitboxRange = isPunching ? 72 : 40;
 
-        if (Math.abs(p.sx - opp.sx) < hitboxRange && Math.abs(p.sy - opp.y) < P.size * 1.0) {
+        if (Math.abs(p.sx - opp.sx) < hitboxRange && Math.abs(p.sy - opp.y) < 40) {
           if (opp.st === ST.BULL_CHARGE || opp.st === ST.BULL_REBOUND) {
             // Dash Clash!
             p.st = ST.IDLE;
@@ -1944,8 +1946,8 @@ class PlayScene extends Phaser.Scene {
         p.pt = 0;
         const isAntiAir = [4,9,13].includes(opp.st); // [ST.JUMP, ST.FLY, ST.ONROPE]
         // Extend vertical hitbox for anti-airs so grounded punches reach up to hitting jumping/roping opponents
-        const vertHitbox = isAntiAir ? P.size * 3.0 : P.size * 1.0;
-        if (Math.abs(p.sx - opp.sx) < P.size * 1.6 && Math.abs(p.sy - opp.y) < vertHitbox) {
+        const vertHitbox = isAntiAir ? 120 : 40;
+        if (Math.abs(p.sx - opp.sx) < 64 && Math.abs(p.sy - opp.y) < vertHitbox) {
           if (p.f === opp.f && opp.st !== ST.DOWN && opp.st !== ST.HIT && !isAntiAir) {
             // SUPLEX! Punching from behind
             p.st = ST.SUPLEX_A; p.spt = 0; p.carry = opp;
@@ -2126,12 +2128,12 @@ class PlayScene extends Phaser.Scene {
     // Execute AI strategy
     switch (p.as) {
       case 'approach':
-        if (d > P.size * 1.1) {
+        if (d > 44) {
           // Human-like Y-axis first alignment
-          if (Math.abs(dy) > P.size * 0.8) {
+          if (Math.abs(dy) > 32) {
             inputs.up = dy < 0; inputs.down = dy > 0;
             // Also close some X distance if far away
-            if (Math.abs(dx) > P.size * 2) {
+            if (Math.abs(dx) > 80) {
                inputs.left = dx < 0; inputs.right = dx > 0;
             }
           } else {
@@ -2189,15 +2191,15 @@ class PlayScene extends Phaser.Scene {
         break;
 
       case 'attack':
-        if (d < P.size * 1.5) {
+        if (d < 60) {
           // Only punch if Y is properly aligned to avoid whiffing
-          if (Math.abs(dy) < P.size * 0.4) {
+          if (Math.abs(dy) < 16) {
             inputs.btn1 = true;
             p.at = 0.15; // Mash fast for combo
           } else {
             // Realign Y before punching
             inputs.up = dy < 0; inputs.down = dy > 0;
-            if (Math.abs(dx) > P.size) {
+            if (Math.abs(dx) > 40) {
               inputs.left = dx < 0; inputs.right = dx > 0;
             }
           }
@@ -2215,7 +2217,7 @@ class PlayScene extends Phaser.Scene {
       case 'capitalize':
         if (![6,7].includes(opp.st)) { // ![ST.HIT, ST.DOWN]
           p.as = 'approach';
-        } else if (d > P.size * 1.1) {
+        } else if (d > 44) {
           const ang = Math.atan2(dy, dx);
           const spd = P.walkSpd;
           const mx = Math.cos(ang) * spd;
@@ -2286,7 +2288,7 @@ class PlayScene extends Phaser.Scene {
           if (p.vy > 0 && p.jh < 60) {
             const shadowDist = Math.hypot(p.sx - opp.x, p.sy - opp.y);
             // Only body slam if close, but sometimes randomly hold back
-            if (shadowDist < P.size * 2 && Math.random() < 0.7) {
+            if (shadowDist < 80 && Math.random() < 0.7) {
               inputs.btn1 = true;
               p.as = 'retreat'; p.at = 1.0;
             }
@@ -2310,11 +2312,18 @@ class PlayScene extends Phaser.Scene {
 
   update() {
     if (this.tG) {
-      if (this.canPause && ['P1_1','P2_1','START1','START2'].some(isPressed)) {
+      if (this.canPause && ['START1','START2'].some(isPressed)) {
         this.tG.destroy();
         this.tG = 0;
         this.showFightText();
         snd('bell');
+      }
+      if (this.canPause) {
+        ['P1_1','P1_2','P1_3'].forEach((k, i) => {
+          let h = isHeld(k) || isHeld('P2_'+(i+1));
+          this.tBtns[i].setScale(h ? 10 : 8);
+          if (isPressed(k) || isPressed('P2_'+(i+1))) snd('punch');
+        });
       }
       clearPressed();
       
@@ -2363,7 +2372,7 @@ class PlayScene extends Phaser.Scene {
 
     if (this.me) {
       targetMidX = (this.p1.x + this.p2.x) / 2;
-      targetMidY = (this.p1.y + this.p2.y) / 2 - P.size;
+      targetMidY = (this.p1.y + this.p2.y) / 2 - 40;
       targetZoom = 1.4;
     }
 
