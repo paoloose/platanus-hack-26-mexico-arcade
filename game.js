@@ -501,13 +501,10 @@ class MenuScene extends Phaser.Scene {
 
     // Mode Selection
     this.cursor = 0;
-    this.items = ['1 JUGADOR', '2 JUGADORES'].map((l, i) => {
-      let y = 420 + i * 60;
-      return {
-        bg: this.add.rectangle(400, y, 300, 50, 0x1a1e05).setStrokeStyle(2, 0x3a3a0a).setDepth(10),
-        txt: this.add.text(400, y, l, t(20, '#fff')).setOrigin(.5).setDepth(10)
-      }
-    });
+    this.items = ['1 JUGADOR', '2 JUGADORES'].map((l, i) => ({
+      bg: this.add.rectangle(400, 420+i*60, 300, 50, 0x1a1e05).setStrokeStyle(2, 0x3a3a0a).setDepth(10),
+      txt: this.add.text(400, 420+i*60, l, t(20, '#fff')).setOrigin(.5).setDepth(10)
+    }));
 
 
     this.updateMenu();
@@ -559,6 +556,11 @@ class CharSelectScene extends Phaser.Scene {
       { cursor: 0, confirmed: false },
       { cursor: this.charCount - 1, confirmed: false }
     ];
+    this.go = () => {
+      this.registry.set('p1Char', this.sel[0].cursor);
+      this.registry.set('p2Char', this.sel[1].cursor);
+      this.scene.start('PlayScene');
+    };
 
     // Graphics layers
     this.gridGfx = this.add.graphics().setDepth(10);
@@ -570,8 +572,8 @@ class CharSelectScene extends Phaser.Scene {
     this.p2Label = b(W-115, 120, this.mode === '2p' ? 'P2' : 'CPU', '#f44', 20);
     this.p1Name = b(115, 410, '', '#fff', 24);
     this.p2Name = b(W-115, 410, '', '#fff', 24);
-    this.p1Ready = b(115, 440, 'LISTO', '#2dc243', 16).setVisible(false);
-    this.p2Ready = b(W-115, 440, 'LISTO', '#2dc243', 16).setVisible(false);
+    this.p1Ready = b(115, 440, ' LISTO ', '#000', 16).setBackgroundColor('#2dc243').setVisible(false);
+    this.p2Ready = b(W-115, 440, ' LISTO ', '#000', 16).setBackgroundColor('#2dc243').setVisible(false);
 
     b(400, 570, 'BTN1 O START: ELEGIR', '#6f7a4a', 12);
 
@@ -623,11 +625,7 @@ class CharSelectScene extends Phaser.Scene {
             this.sel[1].cursor = others[Rnd(0, others.length - 1)];
             this.sel[1].confirmed = true;
             snd('bell');
-            this.time.delayedCall(1000, () => {
-              this.registry.set('p1Char', this.sel[0].cursor);
-              this.registry.set('p2Char', this.sel[1].cursor);
-              this.scene.start('PlayScene');
-            });
+            this.time.delayedCall(1000, this.go);
           }
         }
       });
@@ -637,11 +635,7 @@ class CharSelectScene extends Phaser.Scene {
     if (this.mode === '2p' && p1Done && p2Done && !this.tr) {
       this.tr = true;
       snd('bell');
-      this.time.delayedCall(800, () => {
-        this.registry.set('p1Char', this.sel[0].cursor);
-        this.registry.set('p2Char', this.sel[1].cursor);
-        this.scene.start('PlayScene');
-      });
+      this.time.delayedCall(800, this.go);
     }
 
     this.renderUI();
@@ -833,9 +827,7 @@ class PlayScene extends Phaser.Scene {
       let tg = this.add.graphics({ x: 400, y: 420 }).setScale(8);
       [0,1,2].map(i => drawSprite(tg, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), i*15-15, 0));
       c.add(tg);
-      a(280, 480, 'BTN 1', 16, '#aaa');
-      a(400, 480, 'BTN 2', 16, '#aaa');
-      a(520, 480, 'BTN 3', 16, '#aaa');
+      [280,400,520].map((x,i)=>a(x,480,'BTN '+(i+1),16,'#aaa'));
       a(400, 540, 'PRESIONA UN BOTON PARA INICIAR', 20);
     } else {
       this.showFightText();
