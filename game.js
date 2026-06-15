@@ -202,39 +202,23 @@ function snd(type) {
   const ctx = getAudioCtx();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
+  osc.connect(gain); gain.connect(ctx.destination);
   const now = ctx.currentTime;
-  switch (type) {
-    case 'punch':
-      osc.type = 'square'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
-      gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-      osc.start(now); osc.stop(now + 0.05); break;
-    case 'slam':
-      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(80, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
-      gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-      osc.start(now); osc.stop(now + 0.15); break;
-    case 'rope':
-      osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
-      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-      osc.start(now); osc.stop(now + 0.1); break;
-    case 'jump':
-      osc.type = 'sine'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
-      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-      osc.start(now); osc.stop(now + 0.2); break;
-    case 'count':
-      osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
-      gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-      osc.start(now); osc.stop(now + 0.05); break;
-    case 'bell':
-      osc.type = 'sine'; osc.frequency.setValueAtTime(500, now);
-      gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-      osc.start(now); osc.stop(now + 0.5); break;
-    case 'select':
-      osc.type = 'square'; osc.frequency.setValueAtTime(1200, now);
-      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
-      osc.start(now); osc.stop(now + 0.03); break;
-  }
+  const p = (t, f1, f2, g, dur) => {
+    osc.type = t;
+    osc.frequency.setValueAtTime(f1, now);
+    if (f2) osc.frequency.exponentialRampToValueAtTime(f2, now + dur);
+    gain.gain.setValueAtTime(g, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + dur);
+    osc.start(now); osc.stop(now + dur);
+  };
+  const m = {
+    punch: ['square', 200, 100, 0.3, 0.05], slam: ['sawtooth', 80, 40, 0.4, 0.15],
+    rope: ['sine', 400, 600, 0.2, 0.1], jump: ['sine', 300, 150, 0.2, 0.2],
+    count: ['square', 800, 0, 0.3, 0.05], bell: ['sine', 500, 0, 0.3, 0.5],
+    select: ['square', 1200, 0, 0.2, 0.03]
+  };
+  if (m[type]) p(...m[type]);
 }
 
 // Storage
@@ -587,6 +571,7 @@ class CharSelectScene extends Phaser.Scene {
     this.mode = this.registry.get('mode') || '1p';
     this.charCount = CH.length; // Number of characters
     this.tr = false;
+    this.aiPicking = false;
 
     // Player selections
     this.sel = [
@@ -1124,33 +1109,24 @@ class PlayScene extends Phaser.Scene {
   }
 
   createHUD() {
-    this.hud = {};
-    this.hud.container = this.add.container(W / 2, H / 2).setScrollFactor(0).setDepth(2000);
+    let h = this.hud = {};
+    h.container = this.add.container(W / 2, H / 2).setScrollFactor(0).setDepth(2e3);
 
-    this.hud.hp1Bg = this.add.rectangle(120 - W / 2, 30 - H / 2, 200, 24, 0x000000);
-    this.hud.hp1Bg.setStrokeStyle(2, 0xffffff);
-    this.hud.hp1 = this.add.rectangle(20 - W / 2, 30 - H / 2, 200, 20, C.bar);
-    this.hud.hp1.setOrigin(0, 0.5);
-    this.hud.p1Name = this.add.text(20 - W / 2, 50 - H / 2, 'P1', t(12, '#ffffff')).setOrigin(0, 0.5);
+    h.hp1Bg = this.add.rectangle(120 - W / 2, 30 - H / 2, 200, 24, 0).setStrokeStyle(2, 0xffffff);
+    h.hp1 = this.add.rectangle(20 - W / 2, 30 - H / 2, 200, 20, C.bar).setOrigin(0, 0.5);
+    h.p1Name = this.add.text(20 - W / 2, 50 - H / 2, 'P1', t(12, '#fff')).setOrigin(0, 0.5);
 
-    this.hud.hp2Bg = this.add.rectangle(W - 120 - W / 2, 30 - H / 2, 200, 24, 0x000000);
-    this.hud.hp2Bg.setStrokeStyle(2, 0xffffff);
-    this.hud.hp2 = this.add.rectangle(W - 220 - W / 2, 30 - H / 2, 200, 20, C.bar);
-    this.hud.hp2.setOrigin(0, 0.5);
-    this.hud.p2Name = this.add.text(W - 20 - W / 2, 50 - H / 2, 'P2', t(12, '#ffffff')).setOrigin(1, 0.5);
+    h.hp2Bg = this.add.rectangle(W - 120 - W / 2, 30 - H / 2, 200, 24, 0).setStrokeStyle(2, 0xffffff);
+    h.hp2 = this.add.rectangle(W - 220 - W / 2, 30 - H / 2, 200, 20, C.bar).setOrigin(0, 0.5);
+    h.p2Name = this.add.text(W - 20 - W / 2, 50 - H / 2, 'P2', t(12, '#fff')).setOrigin(1, 0.5);
 
-    // Winner Container
-    this.hud.winContainer = this.add.container(0, H / 2).setVisible(false);
-    const winBg = this.add.rectangle(0, 0, W, 150, 0x000000, 0.5).setOrigin(0.5, 1);
-    this.hud.winTitle = this.add.text(0, -110, '.', t(24, '#ffffff')).setOrigin(0.5);
-    this.hud.winName = this.add.text(0, -70, 'NAME', t(48, '#e1ff00', 1)).setOrigin(0.5);
-    this.hud.winPrompt = this.add.text(0, -H / 2, 'PRESIONA CUALQUIER BOTÓN PARA CONTINUAR', t(24, '#ffff00', 1)).setOrigin(0.5).setStroke('#000000', 6).setVisible(false);
-    this.hud.winContainer.add([winBg, this.hud.winTitle, this.hud.winName, this.hud.winPrompt]);
-
-    this.hud.container.add([
-      this.hud.hp1Bg, this.hud.hp1, this.hud.p1Name,
-      this.hud.hp2Bg, this.hud.hp2, this.hud.p2Name, this.hud.winContainer
-    ]);
+    h.winContainer = this.add.container(0, H / 2).setVisible(false);
+    h.winTitle = this.add.text(0, -110, '.', t(24, '#fff')).setOrigin(0.5);
+    h.winName = this.add.text(0, -70, 'NAME', t(48, '#e1ff00', 1)).setOrigin(0.5);
+    h.winSubtitle = this.add.text(0, -30, 'GANADOR DE LA PELEA', t(16, '#fff')).setOrigin(0.5).setVisible(false);
+    h.winPrompt = this.add.text(0, -H / 2, 'PRESIONA CUALQUIER BOTÓN PARA CONTINUAR', t(24, '#ffff00', 1)).setOrigin(0.5).setStroke('#000', 6).setVisible(false);
+    h.winContainer.add([this.add.rectangle(0, 0, W, 150, 0, 0.5).setOrigin(0.5, 1), h.winTitle, h.winName, h.winSubtitle, h.winPrompt]);
+    h.container.add([h.hp1Bg, h.hp1, h.p1Name, h.hp2Bg, h.hp2, h.p2Name, h.winContainer]);
   }
 
   resetRound() {
@@ -1162,6 +1138,7 @@ class PlayScene extends Phaser.Scene {
     if (this.hud.winContainer) {
       this.hud.winContainer.setVisible(false);
       this.hud.winPrompt.setVisible(false);
+      this.hud.winSubtitle.setVisible(false);
       this.hud.winPrompt.setAlpha(1);
     }
 
@@ -1349,7 +1326,15 @@ class PlayScene extends Phaser.Scene {
     // Face the correct direction. We scale by 4 here so 24x24 sprites appear larger (96x96)
     p.body.setScale(p.f * sx, sy);
 
-    if (p.st === ST.DOWN || p.st === ST.KO) { p.body.setAngle(90); }
+    if (p.st === ST.DOWN) { p.body.setAngle(90); }
+    else if (p.st === ST.KO) {
+      if (this.winPhase === 0) {
+        const prog = Math.min(1, (0.5 - this.graceTimer) / 0.5);
+        p.body.setAngle(prog * 90 * -p.f);
+      } else {
+        p.body.setAngle(90 * -p.f);
+      }
+    }
     else if (p.st === ST.ONROPE) { p.body.setAngle(0); }
     else if (p.st === ST.FLY && p.charName !== 2) {
       p.body.setAngle(-90 * p.f);
@@ -1378,12 +1363,7 @@ class PlayScene extends Phaser.Scene {
     if (p.charging && p.st !== ST.JUMP) { p.chargeBar.setVisible(true); p.chargeBarBg.setVisible(true); }
     else { p.chargeBar.setVisible(false); p.chargeBarBg.setVisible(false); }
 
-    // Debug: show current state
-    if (p.debugState) {
-      p.debugState.setDepth(baseDepth + 0.4);
-      p.debugState.setPosition(p.x, p.y + P.size / 2 + 8);
-      p.debugState.setText(p.st.toUpperCase());
-    }
+
   }
 
   updateHUD() {
@@ -2046,16 +2026,20 @@ class PlayScene extends Phaser.Scene {
 
   // Human player reads real inputs
   updatePlayer(p, dt, opp) {
+    const n = p.num;
     const inputs = {
-      up: p.num === 1 ? isHeld('P1_U') : isHeld('P2_U'),
-      down: p.num === 1 ? isHeld('P1_D') : isHeld('P2_D'),
-      left: p.num === 1 ? isHeld('P1_L') : isHeld('P2_L'),
-      right: p.num === 1 ? isHeld('P1_R') : isHeld('P2_R'),
-      btn1: p.num === 1 ? isPressed('P1_1') : isPressed('P2_1'),
-      btn2: p.num === 1 ? isPressed('P1_2') : isPressed('P2_2'),
-      btn3: p.num === 1 ? isHeld('P1_3') : isHeld('P2_3'),
-      btn4: false,
+      up: isHeld('P' + n + '_U'),
+      down: isHeld('P' + n + '_D'),
+      left: isHeld('P' + n + '_L'),
+      right: isHeld('P' + n + '_R'),
+      btn1: isPressed('P' + n + '_1'),
+      btn2: isPressed('P' + n + '_2'),
+      btn3: isHeld('P' + n + '_3'),
+      btn4: false
     };
+    if (this.me && this.winPhase !== 2) {
+      for (const k in inputs) inputs[k] = false;
+    }
     this.applyPhysics(p, dt, inputs, opp);
   }
 
@@ -2069,6 +2053,11 @@ class PlayScene extends Phaser.Scene {
 
     // AI generates virtual inputs
     const inputs = { up: false, down: false, left: false, right: false, btn1: false, btn2: false, btn3: false, btn4: false };
+
+    if (this.me && this.winPhase !== 2) {
+      this.applyPhysics(p, dt, inputs, opp);
+      return;
+    }
 
     // State machine for AI behavior
     if (!p.as) p.as = 'approach';
@@ -2394,29 +2383,34 @@ class PlayScene extends Phaser.Scene {
 
   checkKO(dt) {
     if (!this.me && (this.p1.hp <= 0 || this.p2.hp <= 0)) {
-      this.me = true; this.winPhase = 0; this.graceTimer = 1.5; snd('bell');
+      this.me = true; this.winPhase = 0; this.graceTimer = 0.5; snd('bell');
+      if (this.p1.hp <= 0) { this.p1.st = 8; this.p1.jh = 0; }
+      if (this.p2.hp <= 0) { this.p2.st = 8; this.p2.jh = 0; }
     }
 
     if (this.me) {
+      if (this.matchIsOver && this.winPhase >= 1 && RndF(0,1) < .3) {
+        let p = this.add.rectangle(this.cameras.main.scrollX + RndF(0,W), this.cameras.main.scrollY - 20, 6, 8, [0xff0000,0xff00,0xff,0xffff00,0xff00ff][Rnd(0,4)]).setDepth(3e3);
+        this.tweens.add({targets: p, y: p.y + H + 40, angle: Rnd(-720,720), x: p.x + Rnd(-100,100), duration: Rnd(2e3,3e3), onComplete: () => p.destroy()});
+      }
+
       if (this.winPhase === 0) {
         this.graceTimer -= dt / 0.35;
         if (this.graceTimer <= 0) {
           const d1 = this.p1.hp <= 0, d2 = this.p2.hp <= 0;
-          if (d1) { this.p1.st = 8; this.p1.body.setAngle(90); }
-          if (d2) { this.p2.st = 8; this.p2.body.setAngle(90); }
 
           const winner = d1 && d2 ? 'draw' : d1 ? 'p2' : 'p1';
           this.winPhase = 1; this.graceTimer = 3.0; this.lastWinner = winner;
 
           this.hud.winContainer.setVisible(true);
-          let titleTxt = ['GANADOR DE LA PRIMERA CAÍDA', 'GANADOR DE LA SEGUNDA CAÍDA', 'GANADOR DE LA TERCERA CAÍDA'][this.round - 1] || 'GANADOR';
+          let titleTxt = 'GANADOR DE LA ' + ['PRIMERA', 'SEGUNDA', 'TERCERA'][this.round - 1] + ' CAÍDA';
           const isMatchOver = (this.scores.p1 + (winner === 'p1' ? 1 : 0) >= 2 || this.scores.p2 + (winner === 'p2' ? 1 : 0) >= 2 || this.round >= 3);
+          this.matchIsOver = isMatchOver;
           if (isMatchOver) {
-            if (this.mode === '1p' && winner === 'p1') {
-              titleTxt = this.tournament < 3 ? '¡OPONENTE ' + (this.tournament + 1) + ' DERROTADO!' : '¡CAMPEÓN DEL TORNEO!';
-            } else {
-              titleTxt = 'GANADOR DEL COMBATE';
-            }
+            titleTxt = 'GANADOR DEL COMBATE';
+            this.hud.winSubtitle.setVisible(true);
+          } else {
+            this.hud.winSubtitle.setVisible(false);
           }
           if (winner === 'draw') titleTxt = '¡EMPATE!';
           this.hud.winTitle.setText(titleTxt);
@@ -2443,18 +2437,8 @@ class PlayScene extends Phaser.Scene {
           snd('select');
           const isMatchOver = (this.scores.p1 >= 2 || this.scores.p2 >= 2 || this.round >= 3);
           if (isMatchOver) {
-            if (this.mode === '1p' && this.lastWinner === 'p1') {
-              if (this.tournament < 3) {
-                this.registry.set('tournament', this.tournament + 1);
-                this.registry.set('round', 1);
-                this.registry.set('scores', { p1: 0, p2: 0 });
-                this.scene.start('PlayScene');
-              } else {
-                this.scene.start('MenuScene');
-              }
-            } else {
-              this.scene.start('MenuScene');
-            }
+            this.registry.remove('p2Char');
+            this.scene.start('MenuScene');
           } else {
             this.round++;
             this.registry.set('round', this.round);
@@ -2485,13 +2469,39 @@ class PauseScene extends Phaser.Scene {
   constructor() { super({ key: 'PauseScene', active: false }); }
   create() {
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7);
-    this.add.text(W / 2, H / 2, 'PAUSADO', t(48, '#e1ff00', 1)).setOrigin(0.5);
-    this.add.text(W / 2, H / 2 + 50, 'PRESIONA START PARA CONTINUAR', t(20, '#ffffff')).setOrigin(0.5);
+    this.add.rectangle(W / 2, H / 2, 400, 250, 0x000000).setStrokeStyle(6, 0xffff00);
+    this.add.text(W / 2, H / 2 - 60, 'PAUSADO', t(48, '#ffff00', 1)).setOrigin(0.5);
+
+    const labels = ['CONTINUAR', 'VOLVER AL MENÚ'];
+    this.items = [];
+    labels.forEach((l, i) => {
+      const y = H / 2 + 20 + i * 60;
+      const bg = this.add.rectangle(W / 2, y, 300, 45, 0x1a1e05).setStrokeStyle(2, 0x3a3a0a);
+      const txt = this.add.text(W / 2, y, l, t(20, '#ffffff')).setOrigin(0.5);
+      this.items.push({ bg, txt });
+    });
+    
+    this.sel = 0;
+    this.us();
   }
+  
+  us() {
+    this.items.forEach((o, i) => {
+      o.bg.setFillStyle(i === this.sel ? 0xe1ff00 : 0x1a1e05);
+      o.txt.setColor(i === this.sel ? '#000000' : '#ffffff');
+    });
+  }
+
   update() {
-    if (isPressed('START1') || isPressed('START2')) {
-      this.scene.resume('PlayScene');
+    if (isPressed('P1_U') || isPressed('P2_U') || isPressed('P1_D') || isPressed('P2_D')) {
+      this.sel ^= 1; snd('select'); this.us();
+    }
+
+    if (isPressed('START1') || isPressed('START2') || isPressed('P1_1') || isPressed('P2_1')) {
+      snd('select');
       this.scene.stop();
+      if (!this.sel) this.scene.resume('PlayScene');
+      else { this.scene.stop('PlayScene'); this.scene.start('MenuScene'); }
     }
     clearPressed();
   }
