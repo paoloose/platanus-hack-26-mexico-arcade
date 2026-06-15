@@ -373,21 +373,7 @@ function drawCityBackground(scene, includeAngel = true) {
   ];
 }
 
-function updateSearchlights(scene, t) {
-  if (!scene.beamGfx) return;
-  scene.beamGfx.clear();
-  for (const b of scene.beams) {
-    const a = b[1] + Math.sin(t * b[2]) * 0.6;
-    const len = 1000;
-    const spread = 0.1;
-    const x1 = b[0] + Math.cos(a - spread) * len;
-    const y1 = H - Math.sin(a - spread) * len;
-    const x2 = b[0] + Math.cos(a + spread) * len;
-    const y2 = H - Math.sin(a + spread) * len;
-    scene.beamGfx.fillStyle(b[3], 0.15);
-    scene.beamGfx.fillTriangle(b[0], H, x1, y1, x2, y2);
-  }
-}
+
 
 // ============================================
 // SHARED BACKGROUND
@@ -512,22 +498,18 @@ class MenuScene extends Phaser.Scene {
     this.add.text(W / 2, 150, 'Platanus Hack 26 - CDMX', t(18, '#ffffff')).setOrigin(0.5).setDepth(10);
     this.tweens.add({ targets: title, scale: 1.05, duration: 1000, yoyo: true, repeat: -1 });
 
+
     // Mode Selection
-    this.opts = [
-      { label: '1 JUGADOR', val: '1p' },
-      { label: '2 JUGADORES', val: '2p' },
-    ];
     this.cursor = 0;
-    this.items = [];
+    this.items = ['1 JUGADOR', '2 JUGADORES'].map((l, i) => {
+      let y = 420 + i * 60;
+      return {
+        bg: this.add.rectangle(400, y, 300, 50, 0x1a1e05).setStrokeStyle(2, 0x3a3a0a).setDepth(10),
+        txt: this.add.text(400, y, l, t(20, '#fff')).setOrigin(.5).setDepth(10)
+      }
+    });
 
-    for (let i = 0; i < this.opts.length; i++) {
-      const y = H - 180 + i * 60;
-      const bg = this.add.rectangle(W / 2, y, 300, 50, 0x1a1e05).setStrokeStyle(2, 0x3a3a0a).setDepth(10);
-      const txt = this.add.text(W / 2, y, this.opts[i].label, t(20, '#ffffff')).setOrigin(0.5).setDepth(10);
-      this.items.push({ bg, txt });
-    }
 
-    this.add.text(W / 2, H - 40, 'ARRIBA/ABAJO MOVER  START O BTN1 ELEGIR', t(14, '#6f7a4a')).setOrigin(0.5).setDepth(10);
     this.updateMenu();
   }
 
@@ -544,15 +526,14 @@ class MenuScene extends Phaser.Scene {
 
     const axis = (isPressed('P1_D') || isPressed('P2_D') ? 1 : 0) - (isPressed('P1_U') || isPressed('P2_U') ? 1 : 0);
     if (axis !== 0) {
-      this.cursor = Phaser.Math.Wrap(this.cursor + axis, 0, this.opts.length);
+      this.cursor = Phaser.Math.Wrap(this.cursor + axis, 0, 2);
       this.updateMenu();
       snd('select');
     }
 
     if (isPressed('P1_1') || isPressed('P2_1') || isPressed('START1') || isPressed('START2')) {
-      const sel = this.opts[this.cursor].val;
       snd('select');
-      this.registry.set('mode', sel);
+      this.registry.set('mode', this.cursor ? '2p' : '1p');
       this.registry.set('round', 1);
       this.registry.set('scores', { p1: 0, p2: 0 });
       this.registry.set('tournament', 0);
@@ -584,14 +565,15 @@ class CharSelectScene extends Phaser.Scene {
     this.pvwGfx = [this.add.graphics().setDepth(10), this.add.graphics().setDepth(10)];
 
     // Text objects
-    this.p1Label = this.add.text(115, 120, 'P1', t(20, '#4488ff', 1)).setOrigin(0.5).setDepth(10);
-    this.p2Label = this.add.text(W - 115, 120, this.mode === '2p' ? 'P2' : 'CPU', t(20, '#ff4444', 1)).setOrigin(0.5).setDepth(10);
-    this.p1Name = this.add.text(115, 410, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
-    this.p2Name = this.add.text(W - 115, 410, '', t(24, '#ffffff', 1)).setOrigin(0.5).setDepth(10);
-    this.p1Ready = this.add.text(115, 440, 'LISTO', t(16, '#2dc243', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
-    this.p2Ready = this.add.text(W - 115, 440, 'LISTO', t(16, '#2dc243', 1)).setOrigin(0.5).setVisible(false).setDepth(10);
+    let b = (x,y,s,c,z) => this.add.text(x,y,s,t(z,c,1)).setOrigin(.5).setDepth(10);
+    this.p1Label = b(115, 120, 'P1', '#48f', 20);
+    this.p2Label = b(W-115, 120, this.mode === '2p' ? 'P2' : 'CPU', '#f44', 20);
+    this.p1Name = b(115, 410, '', '#fff', 24);
+    this.p2Name = b(W-115, 410, '', '#fff', 24);
+    this.p1Ready = b(115, 440, 'LISTO', '#2dc243', 16).setVisible(false);
+    this.p2Ready = b(W-115, 440, 'LISTO', '#2dc243', 16).setVisible(false);
 
-    this.hintTxt = this.add.text(W / 2, H - 30, 'JOYSTICK PARA MOVER · BTN1 O START ELEGIR', t(12, '#6f7a4a')).setOrigin(0.5).setDepth(10);
+    b(400, 570, 'BTN1 O START: ELEGIR', '#6f7a4a', 12);
 
     // Generate preview textures for each character
     const tg = this.add.graphics();
@@ -834,12 +816,31 @@ class PlayScene extends Phaser.Scene {
     this.lastTime = this.time.now;
     this.tournament = this.registry.get('tournament') || 0;
 
-    // Reset round
     this.resetRound();
-
-    // Show FIGHT!
-    this.showFightText();
-    snd('bell');
+    if (this.round === 1) {
+      this.rs = true;
+      let c = this.tG = this.add.container(0, 0).setDepth(3e3).setScrollFactor(0);
+      c.add(this.add.rectangle(400, 300, 800, 600, 0, .8));
+      let a = (x, y, s, z, k) => c.add(this.add.text(x, y, s, t(z, k||'#fff', 1)).setOrigin(.5));
+      a(400, 60, 'CONTROLES', 32);
+      a(400, 100, 'JOYSTICK: MOVER', 18, '#aaa');
+      this.tA = this.add.graphics({x: 400, y: 230}).setScale(5);
+      this.tA2 = this.add.graphics({x: 400, y: 230}).setScale(5).setRotation(.2);
+      c.add(this.tA); c.add(this.tA2);
+      a(280, 340, 'GOLPE', 20, '#f00');
+      a(400, 340, 'EMBESTIDA', 20, '#48f');
+      a(520, 340, 'SALTAR', 20, '#2dc243');
+      let tg = this.add.graphics({ x: 400, y: 420 }).setScale(8);
+      [0,1,2].map(i => drawSprite(tg, parseSprite('2.3[>1.4[>^2D3[>5D>1.4D>', 8), i*15-15, 0));
+      c.add(tg);
+      a(280, 480, 'BTN1', 16, '#aaa');
+      a(400, 480, 'BTN2', 16, '#aaa');
+      a(520, 480, 'BTN3', 16, '#aaa');
+      a(400, 540, 'PRESIONA UN BOTON PARA INICIAR', 20);
+    } else {
+      this.showFightText();
+      snd('bell');
+    }
 
     // Prevent immediate pause from CharSelectScene button mashing
     this.canPause = false;
@@ -1122,7 +1123,7 @@ class PlayScene extends Phaser.Scene {
 
     h.winContainer = this.add.container(0, H / 2).setVisible(false);
     h.winTitle = this.add.text(0, -110, '.', t(24, '#fff')).setOrigin(0.5);
-    h.winName = this.add.text(0, -70, 'NAME', t(48, '#f7bb1b', 1)).setOrigin(0.5);
+    h.winName = this.add.text(0, -60, 'NAME', t(48, '#f7bb1b', 1)).setOrigin(0.5);
     h.winSubtitle = this.add.text(0, -30, 'FIN DE LA PELEA', t(16, '#fff')).setOrigin(0.5).setVisible(false);
     h.winPrompt = this.add.text(0, -H / 2, 'PRESIONA CUALQUIER BOTÓN PARA CONTINUAR', t(24, '#f7bb1b', 1)).setOrigin(0.5).setStroke('#000', 6).setVisible(false);
     h.winContainer.add([this.add.rectangle(0, 0, W, 150, 0, 0.5).setOrigin(0.5, 1), h.winTitle, h.winName, h.winSubtitle, h.winPrompt]);
@@ -1186,7 +1187,7 @@ class PlayScene extends Phaser.Scene {
 
     // Sprites for 3, 2, 1
     const sprites = [
-      parseSprite('~5.1N2<4.4.3<1N4.3.1<2N1<1N4.3.2N1.1<1N4.6.1<1N4.^^^^^~', 12),
+      parseSprite('~5.3<4.4.3<1N4.3.2<1N1<1N4.3.2N1.1<1N4.6.1<1N4.^^^^^~', 12),
       parseSprite('~3.5N4.2.1N5<1N3.2.2<2.2<1N3.7.1<1N3.6.2<1N3.5.2<1N4.4.2<1N5.3.2<1N3.1N2.2.3<5N2.2.7<1N2.~', 12),
       parseSprite('~3.7N2.2.4<>7.1<2N2.6.2<1N3.4.3<2N3.5.4<1N2.2.1<4.2<1N2.2.2<2.3<1N2.2.7<1N2.3.3N>~', 12)
     ];
@@ -2320,6 +2321,22 @@ class PlayScene extends Phaser.Scene {
   }
 
   update() {
+    if (this.tG) {
+      if (this.canPause && ['P1_1','P2_1','START1','START2'].some(isPressed)) {
+        this.tG.destroy();
+        this.tG = 0;
+        this.showFightText();
+        snd('bell');
+      }
+      clearPressed();
+      
+      let m = this.time.now, s = this.p1.sprites;
+      this.tA.clear(); this.tA2.clear();
+      drawSprite(this.tA, s[m%500<250?'Punch':'Walk'], -24, 0);
+      drawSprite(this.tA2, s.Walk, 0, Math.abs(Math.sin(m/50))*-3);
+      drawSprite(this.tA, s.Jump, 24, Math.abs(Math.sin(m/150))*-10);
+    }
+
     let dt = this.game.loop.delta / 1000;
     if (this.me) dt *= 0.35;
 
